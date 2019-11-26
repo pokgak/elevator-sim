@@ -1,0 +1,20 @@
+version: '3'
+services:
+  mqtt:
+    image: eclipse-mosquitto:latest
+    ports:
+      - "1883:1883"
+    networks:
+      - simulation-tier
+
+#  elevator1:
+#    image: docker-hub.informatik.haw-hamburg.de/wp-cps/elevator
+#    environment:
+#      - capacity=20
+#      - 
+#      - mqtt_host=mqtt
+#    depends_on:
+#      - mqtt
+
+networks:
+  simulation-tier:
