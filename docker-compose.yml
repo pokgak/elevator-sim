@@ -4,24 +4,140 @@ services:
     image: eclipse-mosquitto:latest
     ports:
       - "1883:1883"
-    # networks:
-    #   - simulation-tier
 
-#  elevator1:
-#    image: docker-hub.informatik.haw-hamburg.de/wp-cps/elevator
-#    environment:
-#      - capacity=20
-#      -
-#      - mqtt_host=mqtt
-#    depends_on:
-#      - mqtt
-
-  camera:
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/camera:latest
+  elevator1:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/elevator
     environment:
-      - camera_floor=10
+      - capacity=20
+      - mqtt_host=mqtt
     depends_on:
       - mqtt
 
-networks:
-  simulation-tier:
+  elevator2:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/elevator
+    environment:
+      - capacity=20
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  elevator3:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/elevator
+    environment:
+      - capacity=20
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  elevator4:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/elevator
+    environment:
+      - capacity=20
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  elevator5:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/elevator
+    environment:
+      - capacity=20
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  elevator6:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/elevator
+    environment:
+      - capacity=20
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor1:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=1
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor2:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=2
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor3:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=3
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor4:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=4
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor5:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=5
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor6:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=6
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor7:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=7
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor8:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=8
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor9:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=9
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor10:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=10
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
+  floor11:
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/FahrgastSimulator
+    environment:
+      - camera_floor=11
+      - mqtt_host=mqtt
+    depends_on:
+      - mqtt
+
