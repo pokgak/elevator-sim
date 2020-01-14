@@ -5,10 +5,10 @@ set -e
 ###########Config###########
 
 #Number of Elevators
-ELEVATOR=6
+ELEVATOR=1
 
 #Number of Floors
-FLOORS=11
+FLOORS=2
 
 
 ############################
@@ -32,13 +32,14 @@ for i in $(seq 1 $ELEVATOR); do
     echo "" >> ${DOCKERFILE}
 done
 
-for i in $(seq 1 $FLOORS); do
-    echo "  floor${i}:"  >> ${DOCKERFILE}
-    echo "    image: ${DOCKER_REPO}/FahrgastSimulator" >> ${DOCKERFILE}
-    echo "    environment:" >> ${DOCKERFILE}
-    echo "      - camera_floor=${i}" >> ${DOCKERFILE}
-    echo "      - mqtt_host=mqtt" >> ${DOCKERFILE}
-    echo "    depends_on:" >> ${DOCKERFILE}
-    echo "      - mqtt" >> ${DOCKERFILE}
-    echo "" >> ${DOCKERFILE}
-done
+# replaced by input-feeder
+# for i in $(seq 1 $FLOORS); do
+#     echo "  floor${i}:"  >> ${DOCKERFILE}
+#     echo "    image: ${DOCKER_REPO}/FahrgastSimulator" >> ${DOCKERFILE}
+#     echo "    environment:" >> ${DOCKERFILE}
+#     echo "      - camera_floor=${i}" >> ${DOCKERFILE}
+#     echo "      - mqtt_host=mqtt" >> ${DOCKERFILE}
+#     echo "    depends_on:" >> ${DOCKERFILE}
+#     echo "      - mqtt" >> ${DOCKERFILE}
+#     echo "" >> ${DOCKERFILE}
+# done
