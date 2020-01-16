@@ -1,0 +1,17 @@
+[
+    {
+        "time": 2,
+        "topic": "floor/0/callButton/isPushed",
+        "message": "up"
+    },
+    {
+        "time": 5,
+        "topic": "elevator/0/floorSelected",
+        "message": {
+            "selectedFloors": [
+                1,
+                2
+            ]
+        }
+    }
+]
