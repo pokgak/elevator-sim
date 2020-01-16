@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import time
+import json
 from time import sleep
 
 import paho.mqtt.client as mqtt
@@ -35,50 +36,67 @@ class Elevator:
     def on_connect(self, client, userdata, flags, rc):
         logging.info("Connected to broker!")
 
-        self.mqttc.subscribe(topic=f"elevator/{self.id}/nextPosition")
+        topic = f"elevator/{self.id}/nextDestination"
+        self.mqttc.subscribe(topic)
+        self.mqttc.message_callback_add(topic, self.next_dest_cb)
 
-        self.update_current_position(self.floor)
-        self.update_state(self.state)
+        self.update_status()
+
+    def next_dest_cb(self, client, userdata, message):
+        logging.info(
+            f"received message: topic: {message.topic}; message: {str(message.payload)}"
+        )
+
+        destination = int(message.payload)
+        if self.floor < destination:
+            self.update_status(state=DRIVING_UP)
+        elif self.floor > destination:
+            self.update_status(state=DRIVING_DOWN)
+        else:
+            # do nothing
+            pass
+
+        self.moveTo(destination)
+
+        # arrived, update current position and state
+        self.update_status(state=IDLE, position=destination)
 
     def on_message(self, client, userdata, message):
         logging.info(
             f"received message: topic: {message.topic}; message: {str(message.payload)}"
         )
 
-        if str(message.topic) == f"elevator/{self.id}/nextPosition":
-            destination = int(message.payload)
-            if self.state < destination:
-                self.update_state(DRIVING_UP)
-            elif self.state > destination:
-                self.update_state(DRIVING_DOWN)
-            else:
-                # do nothing
-                pass
-
-            self.moveTo(destination)
-
-            # arrived, update current position and state
-            self.update_current_position(destination)
-            self.update_state(IDLE)
-        else:
-            logging.info(f"[{self.id}] unknown topic '{message.topic}' ignored")
+        logging.info(f"[{self.id}] unknown topic '{message.topic}' ignored")
 
     def moveTo(self, destination):
         logging.info("moveto " + str(destination))
         sleep(abs(self.floor - destination) * self.waitTime)
 
-    def update_state(self, newstate):
-        topic = f"elevator/{self.id}/state"
-        logging.info(f"updating state to '{newstate}' on topic '{topic}''")
+    def update_status(self, state=None, position=None):
+        """
+        Publish status update
 
-        self.state = newstate
-        self.mqttc.publish(topic=topic, payload=str(self.state))
+        Optionally accepts arguments to also update the current value.
+        If no arguments are given, publish old value from `self`
 
-    def update_current_position(self, newfloor):
-        self.floor = newfloor
-        topic = f"elevator/{self.id}/currentPosition"
-        logging.info(f"updating current position to '{self.floor}' on topic '{topic}'")
-        self.mqttc.publish(topic=topic, payload=str(self.floor))
+        :param state: new state of the elevator
+        :param position: new position of the elevator
+        """
+
+        topic = f"elevator/{self.id}/status"
+
+        payload = {}
+        if state is not None:
+            self.state = state
+        payload["state"] = self.state
+
+        if position is not None:
+            self.floor = position
+        payload["currentPosition"] = self.floor
+
+        payload = json.dumps(payload)
+        logging.info(f"updating status to '{payload}' on topic '{topic}''")
+        self.mqttc.publish(topic, payload)
 
     def run(self):
         logging.info("starting MQTT loop")

@@ -14,12 +14,12 @@ class ElevatorController:
     """ Data structure for elevator variable
     {
         0: {
-            "status": "idle"/"driving up"/"driving down",
+            "state": "idle"/"driving up"/"driving down",
             "currentPosition": 0
             "queue": [1, 3]  # queue of which floor to go next
         },
         1: {
-            "status": "idle"/"driving up"/"driving down",
+            "state": "idle"/"driving up"/"driving down",
             "currentPosition": 0
             "queue": [1, 3]  # queue of which floor to go next
         }
@@ -55,30 +55,44 @@ class ElevatorController:
                 self.mqttc.message_callback_add(t[0], t[1])
 
     def get_elevator_id(self, msg) -> int:
-        """ Gets ID from elevator message
-        " expected topic in form elevator/{id}/#
-        " Returns int
+        """
+        Gets ID from elevator message
+
+        expected topic in form elevator/{id}/#
+
+        :param msg: MQTT message to parse for ID
+        :return elevator ID
         """
         return int(str(msg.topic).split("/")[1])
 
     def get_floor_number(self, msg) -> int:
-        """ Gets ID from floor message
-        " expected topic in form floor/{id}/#
-        " Returns int
-        " uses get_elevator_id() for now to avoid redundant codes
+        """
+        Gets ID from floor message
+
+        expected topic in form floor/{number}/#
+        uses get_elevator_id() for now to avoid redundant codes
+
+        :param msg: MQTT message to parse for floor number
+        :return floor number
         """
         return self.get_elevator_id(msg)
 
     # TODO: customize according to priority
     def get_closest_idle_elevator(self, dst: int) -> int:
-        """ Get idle elevator from elevators list
-            Try to get the closest one if possible
-            returns None if there is no idle elevator currently
         """
+        Get idle elevator from elevators list
+
+        Try to get the closest one if possible
+
+        :param dst: destination to schedule
+        :return ID of the closest *idle* elevator
+        :return None if there is no idle elevator currently
+        """
+
         idle_elevators = [
             (eid, val["currentPosition"])
             for eid, val in self.elevators.items()
-            if val["status"] == "idle"
+            if val["state"] == "idle"
         ]
 
         closest_id = None  # set to any high distance
@@ -95,8 +109,13 @@ class ElevatorController:
         return closest_id
 
     def get_closest_elevator(self, dst: int, direction: str) -> int:
-        """ Get the closest elevator from elevators list
-            that is moving in the same direction as var direction
+        """
+        Get the closest elevator from elevators list that is moving in the
+        same direction as var direction
+
+        :param dst: destination to schedule
+        :param direction: direction of elevator movement (up/down)
+        :return ID of the closest elevator
         """
         # TODO: implement
         return 0
@@ -114,12 +133,12 @@ class ElevatorController:
         data = json.loads(msg.payload)
         elevator_id = self.get_elevator_id(msg)
 
-        # create "status" and "currentPosition" if not exists
+        # create "state" and "currentPosition" if not exists
         if elevator_id not in self.elevators:
             self.elevators[elevator_id] = {"id": elevator_id}
         elevator = self.elevators[elevator_id]
 
-        elevator["status"] = data["status"]
+        elevator["state"] = data["state"]
         elevator["currentPosition"] = data["currentPosition"]
 
     def elevator_floorSelected_cb(self, mqttc, obj, msg):
