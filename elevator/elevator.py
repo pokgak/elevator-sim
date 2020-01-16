@@ -17,11 +17,11 @@ DEFAULT_WAIT_TIME = 1
 
 
 class Elevator:
-    def __init__(self, id: int, waittime=DEFAULT_WAIT_TIME):
+    def __init__(self, id: int, waittime=DEFAULT_WAIT_TIME, startfloor: int = 0):
         logging.info("ELEVATOR INIT")
 
         self.id = id
-        self.floor = 0
+        self.floor = startfloor
         self.waitTime = waittime
         self.state = IDLE
 
@@ -127,8 +127,11 @@ if __name__ == "__main__":
         "-log",
         action="store",
         dest="log",
-        default="WARNING",
+        default="INFO",
         help="default: WARNING\nAvailable: INFO DEBUG WARNING ERROR CRITICAL",
+    )
+    argp.add_argument(
+        "-start", action="store", dest="start", default=0, help="default: 0",
     )
 
     args = argp.parse_args()
@@ -137,9 +140,10 @@ if __name__ == "__main__":
     port = os.getenv("mqtt_port", args.port)
     eid = os.getenv("elevator_id", args.elevatorid)
     loglevel = os.getenv("log_level", args.log)
+    start_floor = os.getenv("start_floor", args.start)
 
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
-    elevator = Elevator(id=int(eid))
+    elevator = Elevator(id=int(eid), startfloor=int(start_floor))
     elevator.mqtt_init(hostname=host, port=int(port))
     elevator.run()
