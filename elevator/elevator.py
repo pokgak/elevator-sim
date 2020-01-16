@@ -24,6 +24,8 @@ class Elevator:
         self.floor = startfloor
         self.waitTime = waittime
         self.state = IDLE
+        # passenger in form {"start": {startFloor}, "destination": {destFloor}}
+        self.passengers = []
 
         self.mqttc = mqtt.Client()
         self.mqttc.on_message = self.on_message
@@ -39,6 +41,10 @@ class Elevator:
         topic = f"elevator/{self.id}/nextDestination"
         self.mqttc.subscribe(topic)
         self.mqttc.message_callback_add(topic, self.next_dest_cb)
+
+        topic = f"elevator/{self.id}/passengerEnter"
+        self.mqttc.subscribe(topic)
+        self.mqttc.message_callback_add(topic, self.passenger_enter_cb)
 
         self.update_status()
 
@@ -60,6 +66,15 @@ class Elevator:
 
         # arrived, update current position and state
         self.update_status(state=IDLE, position=destination)
+
+        # TODO: publish passenger exit elevator notification
+        # self.mqttc.publish("elevator/{id}/passengerExit")
+
+    def passenger_enter_cb(self, client, userdata, message):
+        logging.info(
+            f"received message: topic: {message.topic}; message: {str(message.payload)}"
+        )
+        # add passengers to passenger list
 
     def on_message(self, client, userdata, message):
         logging.info(

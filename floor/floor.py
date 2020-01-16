@@ -6,14 +6,18 @@ import os
 import time
 import json
 from time import sleep
+from collections import deque
 
 import paho.mqtt.client as mqtt
 
 class Floor:
-    def __init__(self, level: int):
+    def __init__(self, number: int):
         logging.info("ELEVATOR INIT")
 
-        self.level = level
+        self.number = number
+
+        self.passenger_queue = deque()
+        self.arrived_passengers = []
 
         self.mqttc = mqtt.Client()
         self.mqttc.on_message = self.on_message
@@ -26,9 +30,33 @@ class Floor:
     def on_connect(self, client, userdata, flags, rc):
         logging.info("Connected to broker!")
 
-        # topic = f"elevator/{self.id}/nextDestination"
-        # self.mqttc.subscribe(topic)
-        # self.mqttc.message_callback_add(topic, self.next_dest_cb)
+        topic = f"elevator/+/status"
+        self.mqttc.subscribe(topic)
+        self.mqttc.message_callback_add(topic, self.elevator_arrived_cb)
+
+        topic = f"elevator/+/passengerExit"
+        self.mqttc.subscribe(topic)
+        self.mqttc.message_callback_add(topic, self.passenger_exit_cb)
+
+    def elevator_arrived_cb(self, client, userdata, message):
+        logging.info(
+            f"received message: topic: {message.topic}; message: {str(message.payload)}"
+        )
+
+        elevator = json.loads(str(msg.payload))
+        if elevator['currentPosition'] != self.level:
+            # skip if not at current floor
+            return
+
+    def passenger_exit_cb(self, client, userdata, message):
+        logging.info(
+            f"received message: topic: {message.topic}; message: {str(message.payload)}"
+        )
+
+        elevator = json.loads(str(msg.payload))
+        if elevator['currentPosition'] != self.level:
+            # skip if not at current floor
+            return
 
     def on_message(self, client, userdata, message):
         logging.info(
@@ -74,11 +102,11 @@ if __name__ == "__main__":
 
     host = os.getenv("mqtt_host", args.host)
     port = os.getenv("mqtt_port", args.port)
-    level = os.getenv("floor_level", args.level)
+    floor_number = os.getenv("floor_level", args.level)
     loglevel = os.getenv("log_level", args.log)
 
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
-    floor = Floor(level=int(level))
+    floor = Floor(number=int(floor_number))
     floor.mqtt_init(hostname=host, port=int(port))
     floor.run()
