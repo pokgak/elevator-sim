@@ -1,17 +1,19 @@
-[
-    {
-        "time": 2,
-        "topic": "floor/0/callButton/isPushed",
-        "message": "up"
-    },
-    {
-        "time": 5,
-        "topic": "elevator/0/floorSelected",
-        "message": {
-            "selectedFloors": [
-                1,
-                2
-            ]
+{
+    "passenger_list": [
+        {
+            "time": 0,
+            "start": 0,
+            "destination": 1
+        },
+        {
+            "time": 0,
+            "start": 0,
+            "destination": 2
+        },
+        {
+            "time": 0,
+            "start": 0,
+            "destination": 3
         }
-    }
-]
+    ]
+}
