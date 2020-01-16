@@ -1,21 +1,40 @@
 version: '3'
+
+networks:
+  cps_sim:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.21.0.0/24
+
 services:
   mqtt:
     image: eclipse-mosquitto:latest
     ports:
       - "1883:1883"
+    networks:
+      cps_sim:
+        ipv4_address: 172.21.0.2
 
   controller:
+    build: ./elevatorcontroller
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/elevatorcontroller
     depends_on:
       - mqtt
     environment:
       - mqtt_host=mqtt
+    networks:
+      cps_sim:
+        ipv4_address: 172.21.0.3
 
   input_feeder:
+    build: ./input-feeder
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/input-feeder
     depends_on:
       - mqtt
     environment:
       - mqtt_host=mqtt
+    networks:
+      cps_sim:
+        ipv4_address: 172.21.0.4
 

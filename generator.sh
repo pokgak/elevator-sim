@@ -22,13 +22,19 @@ DOCKER_REPO=docker-hub.informatik.haw-hamburg.de/wp-cps
 cat ${DOCKER_TEMPLATE} > ${DOCKERFILE}
 
 for i in $(seq 1 $ELEVATOR); do
+    let "IP = i + 4"
     echo "  elevator${i}:"  >> ${DOCKERFILE}
+    echo "    build: ./elevator" >> ${DOCKERFILE}
     echo "    image: ${DOCKER_REPO}/elevator" >> ${DOCKERFILE}
     echo "    environment:" >> ${DOCKERFILE}
     echo "      - capacity=20" >> ${DOCKERFILE}
     echo "      - mqtt_host=mqtt" >> ${DOCKERFILE}
     echo "    depends_on:" >> ${DOCKERFILE}
     echo "      - mqtt" >> ${DOCKERFILE}
+    echo "      - controller" >> ${DOCKERFILE}
+    echo "    networks:" >> ${DOCKERFILE}
+    echo "      cps_sim:" >> ${DOCKERFILE}
+    echo "        ipv4_address: 172.21.0.${IP}" >> ${DOCKERFILE}
     echo "" >> ${DOCKERFILE}
 done
 
