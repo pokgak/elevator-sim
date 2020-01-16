@@ -27,17 +27,6 @@ services:
       cps_sim:
         ipv4_address: 172.21.0.3
 
-  input_feeder:
-    build: ./input-feeder
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/input-feeder
-    depends_on:
-      - mqtt
-    environment:
-      - mqtt_host=mqtt
-    networks:
-      cps_sim:
-        ipv4_address: 172.21.0.4
-
   elevator1:
     container_name: elevator1
     build: ./elevator
@@ -51,7 +40,7 @@ services:
       - controller
     networks:
       cps_sim:
-        ipv4_address: 172.21.0.5
+        ipv4_address: 172.21.0.4
 
   floor0:
     container_name: floor0
@@ -65,7 +54,7 @@ services:
       - input_feeder
     networks:
       cps_sim:
-        ipv4_address: 172.21.0.6
+        ipv4_address: 172.21.0.5
 
   floor1:
     container_name: floor1
@@ -79,7 +68,7 @@ services:
       - input_feeder
     networks:
       cps_sim:
-        ipv4_address: 172.21.0.7
+        ipv4_address: 172.21.0.6
 
   floor2:
     container_name: floor2
@@ -93,7 +82,7 @@ services:
       - input_feeder
     networks:
       cps_sim:
-        ipv4_address: 172.21.0.8
+        ipv4_address: 172.21.0.7
 
   floor3:
     container_name: floor3
@@ -107,7 +96,7 @@ services:
       - input_feeder
     networks:
       cps_sim:
-        ipv4_address: 172.21.0.9
+        ipv4_address: 172.21.0.8
 
   floor4:
     container_name: floor4
@@ -121,5 +110,5 @@ services:
       - input_feeder
     networks:
       cps_sim:
-        ipv4_address: 172.21.0.10
+        ipv4_address: 172.21.0.9
 

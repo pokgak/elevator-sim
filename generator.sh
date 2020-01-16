@@ -22,8 +22,8 @@ DOCKER_REPO=docker-hub.informatik.haw-hamburg.de/wp-cps/simulation
 cat ${DOCKER_TEMPLATE} > ${DOCKERFILE}
 
 for i in $(seq 1 $ELEVATOR); do
-    # IP 2-4 reserved for broker, controller, input-feeder
-    let "IP = i + 4"
+    # IP 2-4 reserved for broker, controller
+    let "IP = i + 3"
 
     echo "  elevator${i}:"  >> ${DOCKERFILE}
     echo "    container_name: elevator${i}" >> ${DOCKERFILE}

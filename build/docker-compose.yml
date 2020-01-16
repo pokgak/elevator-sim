@@ -27,14 +27,3 @@ services:
       cps_sim:
         ipv4_address: 172.21.0.3
 
-  input_feeder:
-    build: ./input-feeder
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/input-feeder
-    depends_on:
-      - mqtt
-    environment:
-      - mqtt_host=mqtt
-    networks:
-      cps_sim:
-        ipv4_address: 172.21.0.4
-
