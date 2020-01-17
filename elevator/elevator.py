@@ -14,6 +14,7 @@ DRIVING_UP = "driving up"
 DRIVING_DOWN = "driving down"
 
 DEFAULT_WAIT_TIME = 1
+MAX_CAPACITY = 10
 
 
 class Elevator:
@@ -23,6 +24,7 @@ class Elevator:
         self.id = id
         self.floor = startfloor
         self.waitTime = waittime
+        self.max_capacity = MAX_CAPACITY
         self.state = IDLE
         # passenger in form {"start": {startFloor}, "destination": {destFloor}}
         self.passengers = []
@@ -65,16 +67,39 @@ class Elevator:
         self.moveTo(destination)
 
         # arrived, update current position and state
-        self.update_status(state=IDLE, position=destination)
-
-        # TODO: publish passenger exit elevator notification
-        # self.mqttc.publish("elevator/{id}/passengerExit")
+        exit_list = self.get_passenger_exiting(destination)
+        self.update_status(state=IDLE, position=destination, exit_list=exit_list)
 
     def passenger_enter_cb(self, client, userdata, message):
         logging.info(
             f"received message: topic: {message.topic}; message: {str(message.payload)}"
         )
-        # add passengers to passenger list
+
+        """
+        {
+            "floor": $floor,
+            "enter_list": [],
+        }
+        """
+
+        payload = json.loads(message.payload)
+        assert (payload["floor"] == self.floor),f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering"
+
+        enter_list = payload["enter_list"]
+
+        selected_floors = []
+        for p in enter_list:
+            dst = p["destination"]
+            if dst not in selected_floors:
+                selected_floors.append(dst)
+
+        self.passengers.extends(enter_list)
+
+        topic = f"elevator/{self.id}/floorSelected"
+        new_payload = json.dumps(selected_floors)
+        logging.info(f"sending selected floors '{new_payload}' to controller on topic '{topic}''")
+        self.mqttc.publish(topic, new_payload)
+
 
     def on_message(self, client, userdata, message):
         logging.info(
@@ -83,11 +108,14 @@ class Elevator:
 
         logging.info(f"[{self.id}] unknown topic '{message.topic}' ignored")
 
+    def get_passenger_exiting(self, floor: int):
+        return [p for p in self.passengers if p["destination"] == floor]
+
     def moveTo(self, destination):
         logging.info("moveto " + str(destination))
         sleep(abs(self.floor - destination) * self.waitTime)
 
-    def update_status(self, state=None, position=None):
+    def update_status(self, state: str = None, position: int = None, exit_list=None):
         """
         Publish status update
 
@@ -96,6 +124,20 @@ class Elevator:
 
         :param state: new state of the elevator
         :param position: new position of the elevator
+        :param exit_list:
+        :param enter_list:
+
+        Format of expected JSON message:
+
+        {
+            "state": $state,
+            "current_position": $pos,
+            "queue": [],
+            "max_capacity": $max_capacity,
+            "current_capacity": $capacity,
+            "passenger_exiting": true | false,
+            "exit_list": [],
+        }
         """
 
         topic = f"elevator/{self.id}/status"
@@ -107,7 +149,19 @@ class Elevator:
 
         if position is not None:
             self.floor = position
-        payload["currentPosition"] = self.floor
+        payload["current_position"] = self.floor
+
+        if exit_list is not None:
+            payload["passenger_exiting"] = True
+            payload["exit_list"] = exit_list
+
+            # update local state
+            self.passengers = [p for p in self.passengers if p in exit_list]
+            self.capacity = self.capacity - len(exit_list)
+            assert (self.capacity >= 0),f"Elevator id {self.id} capacity less than 0: {self.capacity}"
+
+        else:
+            payload["passenger_exiting"] = False
 
         payload = json.dumps(payload)
         logging.info(f"updating status to '{payload}' on topic '{topic}''")
