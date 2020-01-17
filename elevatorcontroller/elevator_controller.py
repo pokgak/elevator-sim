@@ -15,12 +15,12 @@ class ElevatorController:
     {
         0: {
             "state": "idle"/"driving up"/"driving down",
-            "currentPosition": 0
+            "current_position": 0
             "queue": [1, 3]  # queue of which floor to go next
         },
         1: {
             "state": "idle"/"driving up"/"driving down",
-            "currentPosition": 0
+            "current_position": 0
             "queue": [1, 3]  # queue of which floor to go next
         }
     }
@@ -90,7 +90,7 @@ class ElevatorController:
         """
 
         idle_elevators = [
-            (eid, val["currentPosition"])
+            (eid, val["current_position"])
             for eid, val in self.elevators.items()
             if val["state"] == "idle"
         ]
@@ -133,13 +133,13 @@ class ElevatorController:
         data = json.loads(msg.payload)
         elevator_id = self.get_elevator_id(msg)
 
-        # create "state" and "currentPosition" if not exists
+        # create "state" and "current_position" if not exists
         if elevator_id not in self.elevators:
             self.elevators[elevator_id] = {"id": elevator_id}
         elevator = self.elevators[elevator_id]
 
         elevator["state"] = data["state"]
-        elevator["currentPosition"] = data["currentPosition"]
+        elevator["current_position"] = data["current_position"]
 
     def elevator_floorSelected_cb(self, mqttc, obj, msg):
         logging.info(

@@ -10,4 +10,4 @@ def camera_count(floor):
     return "floor/{}/{}".format(str(floor), CAMERA_COUNT)
 
 def elevators_current_position():
-    return "elevator/+/currentPosition";
+    return "elevator/+/current_position";
