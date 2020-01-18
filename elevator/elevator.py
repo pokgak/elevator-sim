@@ -83,7 +83,9 @@ class Elevator:
         """
 
         payload = json.loads(message.payload)
-        assert (payload["floor"] == self.floor),f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering"
+        assert (
+            payload["floor"] == self.floor
+        )  # , f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering"
 
         enter_list = payload["enter_list"]
 
@@ -93,13 +95,15 @@ class Elevator:
             if dst not in selected_floors:
                 selected_floors.append(dst)
 
-        self.passengers.extends(enter_list)
+        self.passengers += enter_list
+        logging.info(f"New passenger list: {self.passengers}")
 
         topic = f"elevator/{self.id}/floorSelected"
         new_payload = json.dumps(selected_floors)
-        logging.info(f"sending selected floors '{new_payload}' to controller on topic '{topic}''")
+        logging.info(
+            f"sending selected floors '{new_payload}' to controller on topic '{topic}''"
+        )
         self.mqttc.publish(topic, new_payload)
-
 
     def on_message(self, client, userdata, message):
         logging.info(
@@ -152,14 +156,17 @@ class Elevator:
         payload["current_position"] = self.floor
 
         if exit_list is not None:
-            payload["passenger_exiting"] = True
+            capacity_after_exit = self.capacity - len(exit_list)
+            payload["current_capacity"] = capacity_after_exit
+            # payload["passenger_exiting"] = True
             payload["exit_list"] = exit_list
 
             # update local state
             self.passengers = [p for p in self.passengers if p in exit_list]
-            self.capacity = self.capacity - len(exit_list)
-            assert (self.capacity >= 0),f"Elevator id {self.id} capacity less than 0: {self.capacity}"
-
+            self.capacity = capacity_after_exit
+            assert (
+                self.capacity >= 0
+            ), f"Elevator id {self.id} capacity less than 0: {self.capacity}"
         else:
             payload["passenger_exiting"] = False
 

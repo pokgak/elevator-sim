@@ -1,10 +1,12 @@
 FROM python:alpine
 
-# Add projekt source
-WORKDIR /usr/src/floor
-COPY . ./
+WORKDIR /app
 
 # Install dependencies
+COPY ./requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT ["python", "FloorSimulator.py"]
+# Add projekt source
+COPY ./ ./
+
+ENTRYPOINT ["python", "floor.py", "-log", "info"]

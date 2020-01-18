@@ -51,7 +51,6 @@ services:
     depends_on:
       - mqtt
       - controller
-      - input_feeder
     networks:
       cps_sim:
         ipv4_address: 172.21.0.5
@@ -65,50 +64,7 @@ services:
     depends_on:
       - mqtt
       - controller
-      - input_feeder
     networks:
       cps_sim:
         ipv4_address: 172.21.0.6
-
-  floor2:
-    container_name: floor2
-    build: ./floor
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
-    environment:
-      - mqtt_host=mqtt
-    depends_on:
-      - mqtt
-      - controller
-      - input_feeder
-    networks:
-      cps_sim:
-        ipv4_address: 172.21.0.7
-
-  floor3:
-    container_name: floor3
-    build: ./floor
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
-    environment:
-      - mqtt_host=mqtt
-    depends_on:
-      - mqtt
-      - controller
-      - input_feeder
-    networks:
-      cps_sim:
-        ipv4_address: 172.21.0.8
-
-  floor4:
-    container_name: floor4
-    build: ./floor
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
-    environment:
-      - mqtt_host=mqtt
-    depends_on:
-      - mqtt
-      - controller
-      - input_feeder
-    networks:
-      cps_sim:
-        ipv4_address: 172.21.0.9
 

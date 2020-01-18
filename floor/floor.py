@@ -10,11 +10,12 @@ from collections import deque
 
 import paho.mqtt.client as mqtt
 
+
 class Floor:
-    def __init__(self, number: int):
+    def __init__(self, level: int):
         logging.info("ELEVATOR INIT")
 
-        self.number = number
+        self.level = level
 
         self.passenger_queue = deque()
         self.arrived_passengers = []
@@ -32,31 +33,46 @@ class Floor:
 
         topic = f"elevator/+/status"
         self.mqttc.subscribe(topic)
-        self.mqttc.message_callback_add(topic, self.elevator_arrived_cb)
+        self.mqttc.message_callback_add(topic, self.elevator_status_cb)
 
-        topic = f"elevator/+/passengerExit"
-        self.mqttc.subscribe(topic)
-        self.mqttc.message_callback_add(topic, self.passenger_exit_cb)
+    def elevator_status_cb(self, client, userdata, message):
+        """
+       Format of expected JSON message:
 
-    def elevator_arrived_cb(self, client, userdata, message):
+        {
+            "state": $state,
+            "current_position": $pos,
+            "queue": [],
+            "max_capacity": $max_capacity,
+            "current_capacity": $capacity,
+            "passenger_exiting": true | false,
+            "passenger_exiting_list": [],
+        }
+        """
+
         logging.info(
             f"received message: topic: {message.topic}; message: {str(message.payload)}"
         )
 
-        elevator = json.loads(str(msg.payload))
-        if elevator['currentPosition'] != self.level:
-            # skip if not at current floor
+        elevator = json.loads(message.payload)
+        # skip if not at current floor
+        if elevator["current_position"] != self.level:
             return
 
-    def passenger_exit_cb(self, client, userdata, message):
-        logging.info(
-            f"received message: topic: {message.topic}; message: {str(message.payload)}"
-        )
+        if elevator["passenger_exiting"]:
+            self.arrived_passengers.extend(elevator["passenger_exiting_list"])
 
-        elevator = json.loads(str(msg.payload))
-        if elevator['currentPosition'] != self.level:
-            # skip if not at current floor
-            return
+        # reply with passenger enter
+        if len(self.passenger_queue) != 0:
+            available_capacity = elevator["max_capacity"] - elevator["current_capacity"]
+            using = max(len(self.passenger_queue), available_capacity)
+            enter_list = [self.passenger_queue.pop() for n in range(0, using)]
+        else:
+            enter_list = []
+
+        topic = f"elevator/{self.get_elevator_id(message)}/passengerEnter"
+        payload = {"floor": self.level, "enter_list": enter_list}
+        self.mqttc.publish(topic, json.dumps(payload))
 
     def on_message(self, client, userdata, message):
         logging.info(
@@ -64,6 +80,17 @@ class Floor:
         )
 
         logging.info(f"[{self.id}] unknown topic '{message.topic}' ignored")
+
+    def get_elevator_id(self, msg) -> int:
+        """
+        Gets ID from elevator message
+
+        expected topic in form elevator/{id}/#
+
+        :param msg: MQTT message to parse for ID
+        :return elevator ID
+        """
+        return int(str(msg.topic).split("/")[1])
 
     def run(self):
         logging.info("starting MQTT loop")
@@ -102,11 +129,11 @@ if __name__ == "__main__":
 
     host = os.getenv("mqtt_host", args.host)
     port = os.getenv("mqtt_port", args.port)
-    floor_number = os.getenv("floor_level", args.level)
+    floor_level = os.getenv("floor_level", args.level)
     loglevel = os.getenv("log_level", args.log)
 
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
-    floor = Floor(number=int(floor_number))
+    floor = Floor(level=int(floor_level))
     floor.mqtt_init(hostname=host, port=int(port))
     floor.run()
