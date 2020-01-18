@@ -46,7 +46,7 @@ class Floor:
             "max_capacity": $max_capacity,
             "current_capacity": $capacity,
             "passenger_exiting": true | false,
-            "passenger_exiting_list": [],
+            "exit_list": [],
         }
         """
 
@@ -56,11 +56,12 @@ class Floor:
 
         elevator = json.loads(message.payload)
         # skip if not at current floor
-        if elevator["current_position"] != self.level:
+        # ignore driving up status
+        if elevator["state"] == "driving up" or elevator["current_position"] != self.level:
             return
 
         if elevator["passenger_exiting"]:
-            self.arrived_passengers.extend(elevator["passenger_exiting_list"])
+            self.arrived_passengers.extend(elevator["exit_list"])
 
         # reply with passenger enter
         if len(self.passenger_queue) != 0:
@@ -72,6 +73,7 @@ class Floor:
 
         topic = f"elevator/{self.get_elevator_id(message)}/passengerEnter"
         payload = {"floor": self.level, "enter_list": enter_list}
+        logging.info(f"sending passenger entering list to elevator {self.get_elevator_id(message)}; payload: {payload}")
         self.mqttc.publish(topic, json.dumps(payload))
 
     def on_message(self, client, userdata, message):

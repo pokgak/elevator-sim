@@ -25,6 +25,7 @@ class Elevator:
         self.floor = startfloor
         self.waitTime = waittime
         self.max_capacity = MAX_CAPACITY
+        self.capacity = 0
         self.state = IDLE
         # passenger in form {"start": {startFloor}, "destination": {destFloor}}
         self.passengers = []
@@ -40,13 +41,18 @@ class Elevator:
     def on_connect(self, client, userdata, flags, rc):
         logging.info("Connected to broker!")
 
-        topic = f"elevator/{self.id}/nextDestination"
-        self.mqttc.subscribe(topic)
-        self.mqttc.message_callback_add(topic, self.next_dest_cb)
+        # (topic, callback)
+        topics = [
+            (f"elevator/{self.id}/nextDestination", self.next_dest_cb),
+            (f"elevator/{self.id}/passengerEnter", self.passenger_enter_cb),
+        ]
 
-        topic = f"elevator/{self.id}/passengerEnter"
-        self.mqttc.subscribe(topic)
-        self.mqttc.message_callback_add(topic, self.passenger_enter_cb)
+        # subscribe to multiple topics in single SUBSCRIBE command
+        # use QOS=1
+        self.mqttc.subscribe([(t[0], 1) for t in topics])
+        # register the callback for each topic
+        for t in topics:
+            self.mqttc.message_callback_add(t[0], t[1])
 
         self.update_status()
 
@@ -83,11 +89,14 @@ class Elevator:
         """
 
         payload = json.loads(message.payload)
-        assert (
-            payload["floor"] == self.floor
-        )  # , f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering"
+        assert (payload["floor"] == self.floor)
+        # , f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering"
 
         enter_list = payload["enter_list"]
+
+        if len(enter_list) == 0:
+            # no new passengers boarded the elevator, do nothing
+            return
 
         selected_floors = []
         for p in enter_list:
@@ -96,6 +105,7 @@ class Elevator:
                 selected_floors.append(dst)
 
         self.passengers += enter_list
+        self.capacity += len(enter_list)
         logging.info(f"New passenger list: {self.passengers}")
 
         topic = f"elevator/{self.id}/floorSelected"
@@ -158,7 +168,7 @@ class Elevator:
         if exit_list is not None:
             capacity_after_exit = self.capacity - len(exit_list)
             payload["current_capacity"] = capacity_after_exit
-            # payload["passenger_exiting"] = True
+            payload["passenger_exiting"] = True
             payload["exit_list"] = exit_list
 
             # update local state

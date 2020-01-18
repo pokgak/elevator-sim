@@ -48,6 +48,7 @@ services:
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
+      - floor_level=0
     depends_on:
       - mqtt
       - controller
@@ -61,6 +62,7 @@ services:
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
+      - floor_level=1
     depends_on:
       - mqtt
       - controller
