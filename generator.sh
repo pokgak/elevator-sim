@@ -23,7 +23,7 @@ cat ${DOCKER_TEMPLATE} > ${DOCKERFILE}
 
 for i in $(seq 1 $ELEVATOR); do
     # IP 2-4 reserved for broker, controller
-    let "IP = i + 3"
+    let "IP = i + 10"
 
     echo "  elevator${i}:"  >> ${DOCKERFILE}
     echo "    container_name: elevator${i}" >> ${DOCKERFILE}
@@ -38,7 +38,7 @@ for i in $(seq 1 $ELEVATOR); do
     echo "      - controller" >> ${DOCKERFILE}
     echo "    networks:" >> ${DOCKERFILE}
     echo "      cps_sim:" >> ${DOCKERFILE}
-    echo "        ipv4_address: 172.21.0.${IP}" >> ${DOCKERFILE}
+#    echo "        ipv4_address: 172.21.0.${IP}" >> ${DOCKERFILE}
     echo "" >> ${DOCKERFILE}
 done
 
@@ -55,9 +55,8 @@ for i in $(seq 0 $MAX_FLOOR); do
     echo "    depends_on:" >> ${DOCKERFILE}
     echo "      - mqtt" >> ${DOCKERFILE}
     echo "      - controller" >> ${DOCKERFILE}
-    echo "      - input_feeder" >> ${DOCKERFILE}
     echo "    networks:" >> ${DOCKERFILE}
     echo "      cps_sim:" >> ${DOCKERFILE}
-    echo "        ipv4_address: 172.21.0.${IP}" >> ${DOCKERFILE}
+#    echo "        ipv4_address: 172.21.0.${IP}" >> ${DOCKERFILE}
     echo "" >> ${DOCKERFILE}
 done

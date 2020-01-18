@@ -1,1 +1,3 @@
 .vscode/
+gui/influxdb/data
+gui/grafana/data

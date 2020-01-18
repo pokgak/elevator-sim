@@ -14,7 +14,7 @@ services:
       - "1883:1883"
     networks:
       cps_sim:
-        ipv4_address: 172.21.0.2
+        #        ipv4_address: 172.21.0.2
 
   controller:
     build: ./elevatorcontroller
@@ -25,5 +25,45 @@ services:
       - mqtt_host=mqtt
     networks:
       cps_sim:
-        ipv4_address: 172.21.0.3
+        #ipv4_address: 172.21.0.3
 
+  telegraf:
+    image: telegraf:latest
+    volumes:
+      - ./gui/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - influxdb
+    networks:
+      cps_sim:
+
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - "8083:8083"
+      - "8086:8086"
+      - "8090:8090"
+    environment:
+      - INFLUXDB_DATA_ENGINE=tsm1
+      - INFLUXDB_REPORTING_DISABLED=false
+    depends_on:
+      - mqtt
+    volumes:
+    # Data persistency
+    - ./gui/influxdb/data:/var/lib/influxdb
+    networks:
+      cps_sim:
+
+  grafana:
+    image: grafana/grafana:latest
+    user: "0"
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,briangann-gauge-panel,natel-plotly-panel,grafana-simple-json-datasource
+    depends_on:
+      - influxdb
+    volumes:
+    # Data persistency
+      - ./gui/grafana/data:/var/lib/grafana
+    networks:
+      cps_sim:
