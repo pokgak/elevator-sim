@@ -26,10 +26,34 @@ class ElevatorController:
     }
     """
 
+    """
+    elevators schema
+
+    {
+        0: {
+            "state": "idle" | "driving up" | "driving down",
+            "current_position": int
+        }
+    }
+    """
     elevators = dict()
 
-    def __init__(self):
+    """
+    floors schema
+
+    {
+        0: {
+            "up_pushed": False,
+            "down_pushed": False
+        }
+    }
+    """
+    floors = dict()
+
+    def __init__(self, floor_count: int, elevator_count: int):
         logging.info("Init ElevatorController")
+        self.floors = {level: {"up_pushed": False, "down_pushed": False} for level in range(0, floor_count)}
+        self.elevators = {eid: {"state": "idle"} for eid in range(1, elevator_count + 1)}
 
     def on_message(self, mqttc, obj, msg):
         logging.info(
@@ -43,7 +67,7 @@ class ElevatorController:
         topics = [
             ("elevator/+/status", self.elevator_status_cb),
             ("elevator/+/floorSelected", self.elevator_floorSelected_cb),
-            ("floor/+/callButton/isPushed", self.floor_callButtonPushed_cb),
+            ("floor/+/callButton/isPushed/+", self.floor_callButtonPushed_cb),
             # ("calendar/#", self.calendar_handler),
         ]
 
@@ -133,6 +157,11 @@ class ElevatorController:
         data = json.loads(msg.payload)
         elevator_id = self.get_elevator_id(msg)
 
+        if data["state"] == "idle":
+            # FIXME: decide which direction of call button to disable
+            self.floors[int(data["current_position"])]["up"] = False
+            self.floors[int(data["current_position"])]["down"] = False
+
         # create "state" and "current_position" if not exists
         if elevator_id not in self.elevators:
             self.elevators[elevator_id] = {"id": elevator_id}
@@ -146,7 +175,7 @@ class ElevatorController:
             "Received message for topic {}: '{}'".format(msg.topic, msg.payload)
         )
 
-        data = json.loads(msg.payload)
+        selected_floors = json.loads(msg.payload)
         elevator_id = self.get_elevator_id(msg)
 
         # check if key exists, create new if not
@@ -157,7 +186,7 @@ class ElevatorController:
         if "queue" not in elevator:
             elevator["queue"] = deque()
 
-        for f in data["selectedFloors"]:
+        for f in selected_floors:
             # TODO: sort selectedFloors array?
             # only add to queue if not selected already
             if f not in elevator["queue"]:
@@ -182,16 +211,23 @@ class ElevatorController:
         """
 
         source = self.get_floor_number(msg)
-        direction = str(msg.payload)
+        direction = self.get_call_button_direction(msg.topic)
+        # set button pushed
+        self.floors[source][direction] = True
 
-        elevator_id = self.get_closest_idle_elevator(source)
-        if elevator_id is None:
-            elevator_id = self.get_closest_elevator(source, direction)
+        chosen_elevator = self.get_closest_idle_elevator(source)
+        if chosen_elevator is None:
+            chosen_elevator = self.get_closest_elevator(source, direction)
 
-        topic = f"elevator/{elevator_id}/nextDestination"
+        topic = f"elevator/{chosen_elevator}/nextDestination"
         payload = str(source)
         self.mqttc.publish(topic, payload)
         logging.info(f"published to topic: '{topic}'; payload: '{payload}'")
+
+    def get_call_button_direction(self, topic: str):
+        # direction is last section in topic
+        # floor/{level}/callButton/isPushed/{up | down}
+        return topic.split('/')[-1]
 
     def start(self, host, port):
         self.mqttc = mqtt.Client()
@@ -203,14 +239,14 @@ class ElevatorController:
 
 
 class Simulator:
-    def __init__(self, loglevel):
+    def __init__(self, loglevel, floor_count: int, elevator_count: int):
         random.seed()
 
         if not isinstance(loglevel, int):
             raise ValueError("Invalid log level: {}".format(loglevel))
         logging.basicConfig(level=loglevel)
 
-        self.controller = ElevatorController()
+        self.controller = ElevatorController(floor_count=floor_count, elevator_count=elevator_count)
 
     def start(self, host="localhost", port=1883):
         logging.info("Starting simulation")
@@ -244,6 +280,8 @@ if __name__ == "__main__":
     host = os.getenv("mqtt_host", args.host)
     port = os.getenv("mqtt_port", args.port)
     loglevel = os.getenv("log_level", args.log)
+    floor_count = os.getenv("floor_count")
+    elevator_count = os.getenv("elevator_count")
 
-    simulator = Simulator(getattr(logging, loglevel.upper()))
+    simulator = Simulator(getattr(logging, loglevel.upper()), int(floor_count), int(elevator_count))
     simulator.start(host=host, port=port)

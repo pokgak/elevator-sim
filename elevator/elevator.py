@@ -89,7 +89,7 @@ class Elevator:
         """
 
         payload = json.loads(message.payload)
-        assert (payload["floor"] == self.floor, f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering")
+        # assert (payload["floor"] == self.floor)#, f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering"
 
         enter_list = payload["enter_list"]
 
@@ -155,7 +155,7 @@ class Elevator:
 
         topic = f"elevator/{self.id}/status"
 
-        payload = {}
+        payload = {"max_capacity": self.max_capacity}
         if state is not None:
             self.state = state
         payload["state"] = self.state
@@ -229,6 +229,6 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
-    elevator = Elevator(id=int(eid), startfloor=int(start_floor))
+    elevator = Elevator(id=int(eid), startfloor=int(1))
     elevator.mqtt_init(hostname=host, port=int(port))
     elevator.run()

@@ -31,13 +31,64 @@ class Floor:
     def on_connect(self, client, userdata, flags, rc):
         logging.info("Connected to broker!")
 
-        topic = f"elevator/+/status"
-        self.mqttc.subscribe(topic)
-        self.mqttc.message_callback_add(topic, self.elevator_status_cb)
+        # (topic, callback)
+        topics = [
+            (f"elevator/+/status", self.elevator_status_cb),
+            (f"simulation/config/passengerList/floor/{self.level}", self.config_passenger_list_cb),
+        ]
+
+        # subscribe to multiple topics in single SUBSCRIBE command
+        # use QOS=1
+        self.mqttc.subscribe([(t[0], 1) for t in topics])
+        # register the callback for each topic
+        for t in topics:
+            self.mqttc.message_callback_add(t[0], t[1])
+
+    def config_passenger_list_cb(self, client, userdata, message):
+        logging.info(
+            f"received message: topic: {message.topic}; message: {str(message.payload)}"
+        )
+
+        """
+        input-feeder will send the passenger list at time defined in test samples.
+        This callback should publish a pushButton call **ONCE** for each message for
+        each direction.
+
+        Format of expected JSON message:
+
+        [
+            {
+                "start": int,
+                "destination": int,
+            }
+        ]
+        """
+
+        go_up = False
+        go_down = False
+        passenger_list = json.loads(message.payload)
+        for p in passenger_list:
+            # add passenger to queue
+            self.passenger_queue.append(p)
+
+            if not go_up or not go_down:
+                go_up = p["destination"] > self.level
+                go_down = p["destination"] < self.level
+
+        logging.info(f"passenger queue current status: {self.passenger_queue}")
+
+        if go_up:
+            self.mqttc.publish(f"floor/{self.level}/callButton/isPushed/up", "true")
+        if go_down:
+            self.mqttc.publish(f"floor/{self.level}/callButton/isPushed/down", "true")
 
     def elevator_status_cb(self, client, userdata, message):
+        logging.info(
+            f"received message: topic: {message.topic}; message: {str(message.payload)}"
+        )
+
         """
-       Format of expected JSON message:
+        Format of expected JSON message:
 
         {
             "state": $state,
@@ -50,10 +101,6 @@ class Floor:
         }
         """
 
-        logging.info(
-            f"received message: topic: {message.topic}; message: {str(message.payload)}"
-        )
-
         elevator = json.loads(message.payload)
         # skip if not at current floor
         # ignore driving up status
@@ -62,11 +109,13 @@ class Floor:
 
         if elevator["passenger_exiting"]:
             self.arrived_passengers.extend(elevator["exit_list"])
+            logging.info(f"list arrived passengers: {self.arrived_passengers}")
 
         # reply with passenger enter
         if len(self.passenger_queue) != 0:
             available_capacity = elevator["max_capacity"] - elevator["current_capacity"]
-            using = max(len(self.passenger_queue), available_capacity)
+            using = min(len(self.passenger_queue), available_capacity)
+            logging.info(f"enter_list count: {using}; popping in range {range(0, using)}")
             enter_list = [self.passenger_queue.pop() for n in range(0, using)]
         else:
             enter_list = []
@@ -81,7 +130,7 @@ class Floor:
             f"received message: topic: {message.topic}; message: {str(message.payload)}"
         )
 
-        logging.info(f"[{self.id}] unknown topic '{message.topic}' ignored")
+        logging.info(f"[{self.level}] unknown topic '{message.topic}' ignored")
 
     def get_elevator_id(self, msg) -> int:
         """
