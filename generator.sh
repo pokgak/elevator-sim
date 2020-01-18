@@ -8,7 +8,7 @@ set -e
 ELEVATOR=1
 
 #Number of Floors
-FLOORS=5
+FLOORS=2
 
 
 ############################
@@ -52,6 +52,7 @@ for i in $(seq 0 $MAX_FLOOR); do
     echo "    image: ${DOCKER_REPO}/floor" >> ${DOCKERFILE}
     echo "    environment:" >> ${DOCKERFILE}
     echo "      - mqtt_host=mqtt" >> ${DOCKERFILE}
+    echo "      - floor_level=${i}" >> ${DOCKERFILE}
     echo "    depends_on:" >> ${DOCKERFILE}
     echo "      - mqtt" >> ${DOCKERFILE}
     echo "      - controller" >> ${DOCKERFILE}
