@@ -83,6 +83,12 @@ class Floor:
             self.mqttc.publish(f"floor/{self.level}/callButton/isPushed/down", "true")
 
     def elevator_status_cb(self, client, userdata, message):
+        elevator = json.loads(message.payload)
+        # skip if not at current floor
+        # ignore driving up status
+        if elevator["state"] == "driving up" or elevator["current_position"] != self.level:
+            return
+
         logging.info(
             f"received message: topic: {message.topic}; message: {str(message.payload)}"
         )
@@ -100,12 +106,6 @@ class Floor:
             "exit_list": [],
         }
         """
-
-        elevator = json.loads(message.payload)
-        # skip if not at current floor
-        # ignore driving up status
-        if elevator["state"] == "driving up" or elevator["current_position"] != self.level:
-            return
 
         if elevator["passenger_exiting"]:
             self.arrived_passengers.extend(elevator["exit_list"])

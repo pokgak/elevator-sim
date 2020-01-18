@@ -113,6 +113,8 @@ class ElevatorController:
         :return None if there is no idle elevator currently
         """
 
+        logging.info(f"current elevators: {self.elevators.items()}")
+
         idle_elevators = [
             (eid, val["current_position"])
             for eid, val in self.elevators.items()
