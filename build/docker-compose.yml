@@ -16,17 +16,6 @@ services:
       cps_sim:
         #        ipv4_address: 172.21.0.2
 
-  controller:
-    build: ./elevatorcontroller
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/controller
-    depends_on:
-      - mqtt
-    environment:
-      - mqtt_host=mqtt
-    networks:
-      cps_sim:
-        #ipv4_address: 172.21.0.3
-
   telegraf:
     image: telegraf:latest
     volumes:
@@ -67,3 +56,4 @@ services:
       - ./gui/grafana/data:/var/lib/grafana
     networks:
       cps_sim:
+

@@ -21,6 +21,20 @@ DOCKER_REPO=docker-hub.informatik.haw-hamburg.de/wp-cps/simulation
 
 cat ${DOCKER_TEMPLATE} > ${DOCKERFILE}
 
+echo "  controller:" >> ${DOCKERFILE}
+echo "      build: ./elevatorcontroller" >> ${DOCKERFILE}
+echo "      image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/controller" >> ${DOCKERFILE}
+echo "      depends_on:" >> ${DOCKERFILE}
+echo "        - mqtt" >> ${DOCKERFILE}
+echo "      environment:" >> ${DOCKERFILE}
+echo "        - mqtt_host=mqtt" >> ${DOCKERFILE}
+echo "        - floor_count=${FLOORS}" >> ${DOCKERFILE}
+echo "        - elevator_count=${ELEVATOR}" >> ${DOCKERFILE}
+echo "      networks:" >> ${DOCKERFILE}
+echo "        cps_sim:" >> ${DOCKERFILE}
+echo "          #ipv4_address: 172.21.0.3" >> ${DOCKERFILE}
+echo "" >> ${DOCKERFILE}
+
 for i in $(seq 1 $ELEVATOR); do
     # IP 2-4 reserved for broker, controller
     let "IP = i + 10"
@@ -37,7 +51,7 @@ for i in $(seq 1 $ELEVATOR); do
     echo "      - mqtt" >> ${DOCKERFILE}
     echo "      - controller" >> ${DOCKERFILE}
     echo "    networks:" >> ${DOCKERFILE}
-    echo "      cps_sim:" >> ${DOCKERFILE}
+    echo "      - cps_sim" >> ${DOCKERFILE}
 #    echo "        ipv4_address: 172.21.0.${IP}" >> ${DOCKERFILE}
     echo "" >> ${DOCKERFILE}
 done
@@ -57,7 +71,7 @@ for i in $(seq 0 $MAX_FLOOR); do
     echo "      - mqtt" >> ${DOCKERFILE}
     echo "      - controller" >> ${DOCKERFILE}
     echo "    networks:" >> ${DOCKERFILE}
-    echo "      cps_sim:" >> ${DOCKERFILE}
+    echo "      - cps_sim" >> ${DOCKERFILE}
 #    echo "        ipv4_address: 172.21.0.${IP}" >> ${DOCKERFILE}
     echo "" >> ${DOCKERFILE}
 done

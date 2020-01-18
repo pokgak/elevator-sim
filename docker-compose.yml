@@ -16,17 +16,6 @@ services:
       cps_sim:
         #        ipv4_address: 172.21.0.2
 
-  controller:
-    build: ./elevatorcontroller
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/controller
-    depends_on:
-      - mqtt
-    environment:
-      - mqtt_host=mqtt
-    networks:
-      cps_sim:
-        #ipv4_address: 172.21.0.3
-
   telegraf:
     image: telegraf:latest
     volumes:
@@ -67,6 +56,20 @@ services:
       - ./gui/grafana/data:/var/lib/grafana
     networks:
       cps_sim:
+
+  controller:
+      build: ./elevatorcontroller
+      image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/controller
+      depends_on:
+        - mqtt
+      environment:
+        - mqtt_host=mqtt
+        - floor_count=2
+        - elevator_count=1
+      networks:
+        cps_sim:
+          #ipv4_address: 172.21.0.3
+
   elevator1:
     container_name: elevator1
     build: ./elevator
@@ -79,7 +82,7 @@ services:
       - mqtt
       - controller
     networks:
-      cps_sim:
+      - cps_sim
 
   floor0:
     container_name: floor0
@@ -92,7 +95,7 @@ services:
       - mqtt
       - controller
     networks:
-      cps_sim:
+      - cps_sim
 
   floor1:
     container_name: floor1
@@ -105,41 +108,5 @@ services:
       - mqtt
       - controller
     networks:
-      cps_sim:
-
-  floor2:
-    container_name: floor2
-    build: ./floor
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
-    environment:
-      - mqtt_host=mqtt
-    depends_on:
-      - mqtt
-      - controller
-    networks:
-      cps_sim:
-
-  floor3:
-    container_name: floor3
-    build: ./floor
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
-    environment:
-      - mqtt_host=mqtt
-    depends_on:
-      - mqtt
-      - controller
-    networks:
-      cps_sim:
-
-  floor4:
-    container_name: floor4
-    build: ./floor
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
-    environment:
-      - mqtt_host=mqtt
-    depends_on:
-      - mqtt
-      - controller
-    networks:
-      cps_sim:
+      - cps_sim
 
