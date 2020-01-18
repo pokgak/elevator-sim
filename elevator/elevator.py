@@ -89,8 +89,7 @@ class Elevator:
         """
 
         payload = json.loads(message.payload)
-        assert (payload["floor"] == self.floor)
-        # , f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering"
+        assert (payload["floor"] == self.floor, f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering")
 
         enter_list = payload["enter_list"]
 
