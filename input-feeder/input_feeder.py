@@ -1,10 +1,14 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 # input_feeder.py
 
 import argparse
 import asyncio
 import os
 import time
+import yaml
+import json
+
+from typing import List
 
 import paho.mqtt.client as mqtt
 
@@ -20,22 +24,35 @@ def init_mqtt(host: str, port: int) -> mqtt.Client:
 def on_connect(client, userdata, flags, rc):
     print("connected")
 
+def get_floor_topic(floor: int):
+    return f"simulation/config/passengerList/floor/{floor}"
 
-async def delayed_publish(delay: int, topic: str, msg: str):
-    # print(f"wait to publish topic: {topic}; msg: {msg}")
+async def delayed_publish(delay: int, floor: int, passengers):
+    """
+    :param delay: the delay before publish
+    :param floor: start floor of the passengers
+    :param passengers: list of passengers arriving
+    """
+    payload = passengers
+
+    topic = get_floor_topic(floor)
+
     await asyncio.sleep(delay)
-    mqttc.publish(topic, msg)
-    print(f"published topic: {topic}; msg: {msg}")
+    print(f"publishing passengers: {payload}")
+    mqttc.publish(topic, json.dumps(payload))
+    print(f"published passenger: {payload}; start: {floor}")
 
-
-async def main(samples_file):
-    import aiofiles
-    import json
-
+async def main(samples: str):
     schedule = []
-    async with aiofiles.open(samples_file) as f:
-        for i in json.loads(await f.read()):
-            schedule.append(delayed_publish(i["time"], i["topic"], json.dumps(i["message"])))
+    samples = yaml.load(samples, Loader=yaml.BaseLoader)
+
+    for s in samples:
+        time = int(s["time"])
+        for f in s["floors"]:
+            start_floor = int(f["start"])
+            passengers = f["passengers"]
+            schedule.append(delayed_publish(time , start_floor, passengers))
+
     await asyncio.gather(*schedule)
     print("finished feeding inputs")
 
@@ -56,8 +73,8 @@ if __name__ == "__main__":
         "-samples",
         action="store",
         dest="samples",
-        default="samples/simple_scenario.json",
-        help="default: samples/simple_scenario.json",
+        default="samples/simple_scenario.yaml",
+        help="default: samples/simple_scenario.yaml",
     )
     args = argp.parse_args()
 
@@ -70,6 +87,7 @@ if __name__ == "__main__":
     print("Sleeping for 3 seconds before start sending inputs")
     time.sleep(3)
     print("Start!")
-    asyncio.run(main(samples_file))
+    samples = open(samples_file, 'r').read()
+    asyncio.run(main(samples))
 
     mqttc.disconnect()

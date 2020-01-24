@@ -1,0 +1,8 @@
+- time: 0
+  floors:
+    - start: 0
+      passengers:
+        - destination: 1
+    # - start: 1
+    #   passengers:
+    #     - destination: 2

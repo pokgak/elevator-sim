@@ -1,19 +1,29 @@
-{
-    "passenger_list": [
-        {
-            "time": 0,
-            "start": 0,
-            "destination": 1
-        },
-        {
-            "time": 0,
-            "start": 0,
-            "destination": 2
-        },
-        {
-            "time": 0,
-            "start": 0,
-            "destination": 3
-        }
-    ]
-}
+[
+    {
+        "time": 0,
+        "start_floor": 0,
+        "passengers": [
+            {
+                "destination": 1
+            }
+        ]
+    },
+    {
+        "time": 0,
+        "start_floor": 1,
+        "passengers": [
+            {
+                "destination": 2
+            }
+        ]
+    },
+    {
+        "time": 0,
+        "start_floor": 2,
+        "passengers": [
+            {
+                "destination": 3
+            }
+        ]
+    }
+]
