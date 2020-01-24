@@ -53,7 +53,6 @@ class ElevatorController:
     def __init__(self, floor_count: int, elevator_count: int):
         logging.info("Init ElevatorController")
         self.floors = {level: {"up_pushed": False, "down_pushed": False} for level in range(0, floor_count)}
-        self.elevators = {eid: {"state": "idle"} for eid in range(1, elevator_count + 1)}
 
     def on_message(self, mqttc, obj, msg):
         logging.info(
@@ -167,10 +166,10 @@ class ElevatorController:
         # create "state" and "current_position" if not exists
         if elevator_id not in self.elevators:
             self.elevators[elevator_id] = {"id": elevator_id}
-        elevator = self.elevators[elevator_id]
 
-        elevator["state"] = data["state"]
-        elevator["current_position"] = data["current_position"]
+        self.elevators[elevator_id]["state"] = data["state"]
+        self.elevators[elevator_id]["current_position"] = data["current_position"]
+        logging.info(f"elevator list updated: {self.elevators}")
 
     def elevator_floorSelected_cb(self, mqttc, obj, msg):
         logging.info(

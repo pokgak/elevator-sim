@@ -8,7 +8,7 @@ set -e
 ELEVATOR=1
 
 #Number of Floors
-FLOORS=2
+FLOORS=4
 
 
 ############################
@@ -24,6 +24,7 @@ cat ${DOCKER_TEMPLATE} > ${DOCKERFILE}
 echo "  controller:" >> ${DOCKERFILE}
 echo "      build: ./elevatorcontroller" >> ${DOCKERFILE}
 echo "      image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/controller" >> ${DOCKERFILE}
+echo "      restart: always" >> ${DOCKERFILE}
 echo "      depends_on:" >> ${DOCKERFILE}
 echo "        - mqtt" >> ${DOCKERFILE}
 echo "      environment:" >> ${DOCKERFILE}
@@ -32,7 +33,7 @@ echo "        - floor_count=${FLOORS}" >> ${DOCKERFILE}
 echo "        - elevator_count=${ELEVATOR}" >> ${DOCKERFILE}
 echo "      networks:" >> ${DOCKERFILE}
 echo "        cps_sim:" >> ${DOCKERFILE}
-echo "          #ipv4_address: 172.21.0.3" >> ${DOCKERFILE}
+echo "          ipv4_address: 172.21.0.20" >> ${DOCKERFILE}
 echo "" >> ${DOCKERFILE}
 
 for i in $(seq 1 $ELEVATOR); do
@@ -43,6 +44,7 @@ for i in $(seq 1 $ELEVATOR); do
     echo "    container_name: elevator${i}" >> ${DOCKERFILE}
     echo "    build: ./elevator" >> ${DOCKERFILE}
     echo "    image: ${DOCKER_REPO}/elevator" >> ${DOCKERFILE}
+    echo "    restart: always" >> ${DOCKERFILE}
     echo "    environment:" >> ${DOCKERFILE}
     echo "      - capacity=20" >> ${DOCKERFILE}
     echo "      - mqtt_host=mqtt" >> ${DOCKERFILE}
@@ -52,7 +54,6 @@ for i in $(seq 1 $ELEVATOR); do
     echo "      - controller" >> ${DOCKERFILE}
     echo "    networks:" >> ${DOCKERFILE}
     echo "      - cps_sim" >> ${DOCKERFILE}
-#    echo "        ipv4_address: 172.21.0.${IP}" >> ${DOCKERFILE}
     echo "" >> ${DOCKERFILE}
 done
 
@@ -72,6 +73,5 @@ for i in $(seq 0 $MAX_FLOOR); do
     echo "      - controller" >> ${DOCKERFILE}
     echo "    networks:" >> ${DOCKERFILE}
     echo "      - cps_sim" >> ${DOCKERFILE}
-#    echo "        ipv4_address: 172.21.0.${IP}" >> ${DOCKERFILE}
     echo "" >> ${DOCKERFILE}
 done

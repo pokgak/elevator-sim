@@ -84,8 +84,8 @@ if __name__ == "__main__":
 
     mqttc = init_mqtt(host, port)
 
-    print("Sleeping for 3 seconds before start sending inputs")
-    time.sleep(3)
+    # print("Sleeping for 3 seconds before start sending inputs")
+    # time.sleep(3)
     print("Start!")
     samples = open(samples_file, 'r').read()
     asyncio.run(main(samples))

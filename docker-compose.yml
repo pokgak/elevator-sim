@@ -13,71 +13,72 @@ services:
     ports:
       - "1883:1883"
     networks:
-      cps_sim:
-        #        ipv4_address: 172.21.0.2
+      - cps_sim
 
-  telegraf:
-    image: telegraf:latest
-    volumes:
-      - ./gui/telegraf.conf:/etc/telegraf/telegraf.conf:ro
-    depends_on:
-      - influxdb
-    networks:
-      cps_sim:
+  # telegraf:
+  #   image: telegraf:latest
+  #   volumes:
+  #     - ./gui/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+  #   depends_on:
+  #     - influxdb
+  #   networks:
+  #     cps_sim:
 
-  influxdb:
-    image: influxdb:latest
-    ports:
-      - "8083:8083"
-      - "8086:8086"
-      - "8090:8090"
-    environment:
-      - INFLUXDB_DATA_ENGINE=tsm1
-      - INFLUXDB_REPORTING_DISABLED=false
-    depends_on:
-      - mqtt
-    volumes:
-    # Data persistency
-    - ./gui/influxdb/data:/var/lib/influxdb
-    networks:
-      cps_sim:
+  # influxdb:
+  #   image: influxdb:latest
+  #   ports:
+  #     - "8083:8083"
+  #     - "8086:8086"
+  #     - "8090:8090"
+  #   environment:
+  #     - INFLUXDB_DATA_ENGINE=tsm1
+  #     - INFLUXDB_REPORTING_DISABLED=false
+  #   depends_on:
+  #     - mqtt
+  #   volumes:
+  #   # Data persistency
+  #   - ./gui/influxdb/data:/var/lib/influxdb
+  #   networks:
+  #     cps_sim:
 
-  grafana:
-    image: grafana/grafana:latest
-    user: "0"
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,briangann-gauge-panel,natel-plotly-panel,grafana-simple-json-datasource
-    depends_on:
-      - influxdb
-    volumes:
-    # Data persistency
-      - ./gui/grafana/data:/var/lib/grafana
-    networks:
-      cps_sim:
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   user: "0"
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - GF_INSTALL_PLUGINS=grafana-clock-panel,briangann-gauge-panel,natel-plotly-panel,grafana-simple-json-datasource
+  #   depends_on:
+  #     - influxdb
+  #   volumes:
+  #   # Data persistency
+  #     - ./gui/grafana/data:/var/lib/grafana
+  #   networks:
+  #     cps_sim:
 
   controller:
       build: ./elevatorcontroller
       image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/controller
+      restart: always
       depends_on:
         - mqtt
       environment:
         - mqtt_host=mqtt
-        - floor_count=2
+        - floor_count=4
         - elevator_count=1
       networks:
         cps_sim:
-          #ipv4_address: 172.21.0.3
+          ipv4_address: 172.21.0.20
 
   elevator1:
-    container_name: elevator1
+    container_name: elevator0
     build: ./elevator
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    restart: always
     environment:
       - capacity=20
       - mqtt_host=mqtt
-      - elevator_id=1
+      - elevator_id=0
     depends_on:
       - mqtt
       - controller
@@ -104,6 +105,32 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_level=1
+    depends_on:
+      - mqtt
+      - controller
+    networks:
+      - cps_sim
+
+  floor2:
+    container_name: floor2
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_level=2
+    depends_on:
+      - mqtt
+      - controller
+    networks:
+      - cps_sim
+
+  floor3:
+    container_name: floor3
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_level=3
     depends_on:
       - mqtt
       - controller

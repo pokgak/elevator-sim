@@ -20,6 +20,9 @@ class Floor:
         self.passenger_queue = deque()
         self.arrived_passengers = []
 
+        self.up_pressed = False
+        self.down_pressed = False
+
         self.mqttc = mqtt.Client()
         self.mqttc.on_message = self.on_message
         self.mqttc.on_connect = self.on_connect
@@ -34,7 +37,10 @@ class Floor:
         # (topic, callback)
         topics = [
             (f"elevator/+/status", self.elevator_status_cb),
-            (f"simulation/config/passengerList/floor/{self.level}", self.config_passenger_list_cb),
+            (
+                f"simulation/config/passengerList/floor/{self.level}",
+                self.config_passenger_list_cb,
+            ),
         ]
 
         # subscribe to multiple topics in single SUBSCRIBE command
@@ -54,6 +60,8 @@ class Floor:
         This callback should publish a pushButton call **ONCE** for each message for
         each direction.
 
+        callButton pushed message is sent everytime new config_passenger_list_cb ist called
+
         Format of expected JSON message:
 
         [
@@ -64,30 +72,43 @@ class Floor:
         ]
         """
 
-        go_up = False
-        go_down = False
         passenger_list = json.loads(message.payload)
         for p in passenger_list:
             # add passenger to queue
             self.passenger_queue.append(p)
 
-            if not go_up or not go_down:
-                go_up = p["destination"] > self.level
-                go_down = p["destination"] < self.level
+            destination = int(p["destination"])
+            if not self.up_pressed:
+                self.up_pressed = destination > self.level
+            if not self.down_pressed:
+                self.down_pressed = destination < self.level
 
+        logging.info(
+            f"up pressed: {self.up_pressed}, down pressed: {self.down_pressed}"
+        )
         logging.info(f"passenger queue current status: {self.passenger_queue}")
 
-        if go_up:
+        if self.up_pressed:
             self.mqttc.publish(f"floor/{self.level}/callButton/isPushed/up", "true")
-        if go_down:
+            logging.info(f"published callButton pushed up: true")
+        if self.down_pressed:
             self.mqttc.publish(f"floor/{self.level}/callButton/isPushed/down", "true")
+            logging.info(f"published callButton pushed down: true")
 
     def elevator_status_cb(self, client, userdata, message):
         elevator = json.loads(message.payload)
         # skip if not at current floor
         # ignore driving up status
-        if elevator["state"] == "driving up" or elevator["current_position"] != self.level:
+        if (
+            elevator["state"] == "driving up"
+            or elevator["current_position"] != self.level
+        ):
             return
+
+        # FIXME: determine which direction the elevator is going to and only disable button
+        # with same direction
+        self.up_pressed = False
+        self.down_pressed = False
 
         logging.info(
             f"received message: topic: {message.topic}; message: {str(message.payload)}"
@@ -102,12 +123,11 @@ class Floor:
             "queue": [],
             "max_capacity": $max_capacity,
             "current_capacity": $capacity,
-            "passenger_exiting": true | false,
             "exit_list": [],
         }
         """
 
-        if elevator["passenger_exiting"]:
+        if elevator["state"] == "passenger exiting":
             self.arrived_passengers.extend(elevator["exit_list"])
             logging.info(f"list arrived passengers: {self.arrived_passengers}")
 
@@ -115,14 +135,19 @@ class Floor:
         if len(self.passenger_queue) != 0:
             available_capacity = elevator["max_capacity"] - elevator["current_capacity"]
             using = min(len(self.passenger_queue), available_capacity)
-            logging.info(f"enter_list count: {using}; popping in range {range(0, using)}")
+            logging.info(
+                f"enter_list count: {using}; popping in range {range(0, using)}"
+            )
             enter_list = [self.passenger_queue.pop() for n in range(0, using)]
         else:
-            enter_list = []
+            logging.info("no passenger entering. skipping...")
+            return
 
         topic = f"elevator/{self.get_elevator_id(message)}/passengerEnter"
         payload = {"floor": self.level, "enter_list": enter_list}
-        logging.info(f"sending passenger entering list to elevator {self.get_elevator_id(message)}; payload: {payload}")
+        logging.info(
+            f"sending passenger entering list to elevator {self.get_elevator_id(message)}; payload: {payload}"
+        )
         self.mqttc.publish(topic, json.dumps(payload))
 
     def on_message(self, client, userdata, message):

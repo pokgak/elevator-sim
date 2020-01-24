@@ -12,6 +12,7 @@ import paho.mqtt.client as mqtt
 IDLE = "idle"
 DRIVING_UP = "driving up"
 DRIVING_DOWN = "driving down"
+PASSENGER_EXIT = "passenger exiting"
 
 DEFAULT_WAIT_TIME = 1
 MAX_CAPACITY = 10
@@ -41,6 +42,9 @@ class Elevator:
     def on_connect(self, client, userdata, flags, rc):
         logging.info("Connected to broker!")
 
+        logging.info("sleeping to avoid race")
+        time.sleep(1)
+
         # (topic, callback)
         topics = [
             (f"elevator/{self.id}/nextDestination", self.next_dest_cb),
@@ -54,7 +58,7 @@ class Elevator:
         for t in topics:
             self.mqttc.message_callback_add(t[0], t[1])
 
-        self.update_status()
+        self.update_status(state=IDLE)
 
     def next_dest_cb(self, client, userdata, message):
         logging.info(
@@ -70,11 +74,23 @@ class Elevator:
             # do nothing
             pass
 
-        self.moveTo(destination)
+        if self.floor != destination:
+            self.moveTo(destination)
+        else:
+            logging.info(f"already at floor {destination}")
 
         # arrived, update current position and state
         exit_list = self.get_passenger_exiting(destination)
-        self.update_status(state=IDLE, position=destination, exit_list=exit_list)
+        logging.info(f"passenger want to exit list: {exit_list} at floor {destination}")
+        if len(exit_list) > 0:
+            self.update_status(state=PASSENGER_EXIT, exit_list=exit_list)
+        else:
+            self.update_status(state=IDLE)
+
+    def get_passenger_exiting(self, floor: int):
+        logging.info(f"current passengers: {self.passengers}")
+        logging.info(f"checking exiting passenger at floor {floor}")
+        return [p for p in self.passengers if int(p["destination"]) == floor]
 
     def passenger_enter_cb(self, client, userdata, message):
         logging.info(
@@ -95,6 +111,7 @@ class Elevator:
 
         if len(enter_list) == 0:
             # no new passengers boarded the elevator, do nothing
+            logging.info("no new passenger arrived onboard, skipping message")
             return
 
         selected_floors = []
@@ -121,14 +138,12 @@ class Elevator:
 
         logging.info(f"[{self.id}] unknown topic '{message.topic}' ignored")
 
-    def get_passenger_exiting(self, floor: int):
-        return [p for p in self.passengers if p["destination"] == floor]
-
-    def moveTo(self, destination):
-        logging.info("moveto " + str(destination))
+    def moveTo(self, destination: int):
+        logging.info(f"driving to {destination}")
         sleep(abs(self.floor - destination) * self.waitTime)
+        self.floor = destination
 
-    def update_status(self, state: str = None, position: int = None, exit_list=None):
+    def update_status(self, state: str = None, exit_list=None):
         """
         Publish status update
 
@@ -148,7 +163,6 @@ class Elevator:
             "queue": [],
             "max_capacity": $max_capacity,
             "current_capacity": $capacity,
-            "passenger_exiting": true | false,
             "exit_list": [],
         }
         """
@@ -160,24 +174,21 @@ class Elevator:
             self.state = state
         payload["state"] = self.state
 
-        if position is not None:
-            self.floor = position
-        payload["current_position"] = self.floor
-
         if exit_list is not None:
             capacity_after_exit = self.capacity - len(exit_list)
             payload["current_capacity"] = capacity_after_exit
-            payload["passenger_exiting"] = True
             payload["exit_list"] = exit_list
 
             # update local state
-            self.passengers = [p for p in self.passengers if p in exit_list]
+            self.passengers = [p for p in self.passengers if p not in exit_list]
             self.capacity = capacity_after_exit
             assert (
                 self.capacity >= 0
             ), f"Elevator id {self.id} capacity less than 0: {self.capacity}"
         else:
-            payload["passenger_exiting"] = False
+            payload["current_capacity"] = self.capacity
+
+        payload["current_position"] = self.floor
 
         payload = json.dumps(payload)
         logging.info(f"updating status to '{payload}' on topic '{topic}''")
@@ -229,6 +240,6 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
-    elevator = Elevator(id=int(eid), startfloor=int(1))
+    elevator = Elevator(id=int(eid), startfloor=int(0))
     elevator.mqtt_init(hostname=host, port=int(port))
     elevator.run()
