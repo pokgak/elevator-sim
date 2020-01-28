@@ -5,6 +5,7 @@ import logging
 import os
 import time
 import json
+import asyncio
 from time import sleep
 
 import paho.mqtt.client as mqtt
@@ -84,6 +85,8 @@ class Elevator:
         logging.info(f"passenger want to exit list: {exit_list} at floor {destination}")
         if len(exit_list) > 0:
             self.update_status(state=PASSENGER_EXIT, exit_list=exit_list)
+            asyncio.sleep(1)
+            self.update_status(state=IDLE)
         else:
             self.update_status(state=IDLE)
 
