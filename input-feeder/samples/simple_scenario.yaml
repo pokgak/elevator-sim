@@ -3,6 +3,18 @@
     - start: 0
       passengers:
         - destination: 1
+        - destination: 2
+        - destination: 3
     # - start: 1
     #   passengers:
     #     - destination: 2
+    # - start: 2
+    #   passengers:
+    #     - destination: 3
+# - time: 3
+#   floors:
+#     - start: 3
+#       passengers:
+#         - destination: 2
+
+
