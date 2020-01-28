@@ -1,3 +1,9 @@
 .vscode/
 gui/influxdb/data
 gui/grafana/data
+
+# python virtualenv
+
+bin/
+lib/
+include/
