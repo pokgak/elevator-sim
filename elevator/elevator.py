@@ -6,6 +6,7 @@ import os
 import time
 import json
 import asyncio
+import threading
 from time import sleep
 
 import paho.mqtt.client as mqtt
@@ -16,7 +17,8 @@ DRIVING_DOWN = "driving down"
 PASSENGER_EXIT = "passenger exiting"
 
 DEFAULT_WAIT_TIME = 1
-MAX_CAPACITY = 10
+MAX_CAPACITY = 5
+EXIT_IDLE_DELAY = 1
 
 
 class Elevator:
@@ -31,6 +33,8 @@ class Elevator:
         self.state = IDLE
         # passenger in form {"start": {startFloor}, "destination": {destFloor}}
         self.passengers = []
+
+        self.exit_idle_timer : threading.Timer = None
 
         self.mqttc = mqtt.Client()
         self.mqttc.on_message = self.on_message
@@ -66,6 +70,10 @@ class Elevator:
             f"received message: topic: {message.topic}; message: {str(message.payload)}"
         )
 
+        if self.exit_idle_timer is not None and self.exit_idle_timer.is_alive():
+            logging.info("cancelling exit_idle_timer")
+            self.exit_idle_timer.cancel()
+
         destination = int(message.payload)
         if self.floor < destination:
             self.update_status(state=DRIVING_UP)
@@ -85,10 +93,15 @@ class Elevator:
         logging.info(f"passenger want to exit list: {exit_list} at floor {destination}")
         if len(exit_list) > 0:
             self.update_status(state=PASSENGER_EXIT, exit_list=exit_list)
-            asyncio.sleep(1)
-            self.update_status(state=IDLE)
-        else:
-            self.update_status(state=IDLE)
+
+        self.delayed_update_status(IDLE)
+
+    def delayed_update_status(self, state: str):
+        logging.info(f"scheduling state update to '{state}' after {EXIT_IDLE_DELAY} seconds")
+        self.exit_idle_timer = threading.Timer(
+                float(EXIT_IDLE_DELAY), self.update_status, kwargs={"state": state}
+            )
+        self.exit_idle_timer.start()
 
     def get_passenger_exiting(self, floor: int):
         logging.info(f"current passengers: {self.passengers}")
@@ -116,6 +129,9 @@ class Elevator:
             # no new passengers boarded the elevator, do nothing
             logging.info("no new passenger arrived onboard, skipping message")
             return
+        elif self.exit_idle_timer is not None and self.exit_idle_timer.is_alive():
+            logging.info("cancelling exit_idle_timer")
+            self.exit_idle_timer.cancel()
 
         selected_floors = []
         for p in enter_list:

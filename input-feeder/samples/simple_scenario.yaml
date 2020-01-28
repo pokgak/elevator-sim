@@ -4,17 +4,10 @@
       passengers:
         - destination: 1
         - destination: 2
-        - destination: 3
-        - destination: 3
-        - destination: 3
-        - destination: 3
-        - destination: 3
-        - destination: 3
-        - destination: 3
-        - destination: 3
-        - destination: 3
-        - destination: 3
-        - destination: 3
+        - destination: 2
+        - destination: 2
+        - destination: 2
+        - destination: 2
         - destination: 3
     # - start: 1
     #   passengers:
@@ -22,10 +15,20 @@
     # - start: 2
     #   passengers:
     #     - destination: 3
-# - time: 3
-#   floors:
-#     - start: 3
-#       passengers:
-#         - destination: 2
+- time: 1
+  floors:
+    - start: 2
+      passengers:
+        - destination: 3
+        - destination: 3
+        - destination: 3
+- time: 5
+  floors:
+    - start: 3
+      passengers:
+        - destination: 0
+        - destination: 0
+        - destination: 0
+        - destination: 0
 
 
