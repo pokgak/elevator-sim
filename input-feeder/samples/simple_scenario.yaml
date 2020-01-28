@@ -5,6 +5,17 @@
         - destination: 1
         - destination: 2
         - destination: 3
+        - destination: 3
+        - destination: 3
+        - destination: 3
+        - destination: 3
+        - destination: 3
+        - destination: 3
+        - destination: 3
+        - destination: 3
+        - destination: 3
+        - destination: 3
+        - destination: 3
     # - start: 1
     #   passengers:
     #     - destination: 2

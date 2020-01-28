@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import time
+import datetime
 import json
 from time import sleep
 from collections import deque
@@ -74,9 +75,12 @@ class Floor:
 
         passenger_list = json.loads(message.payload)
         for p in passenger_list:
-            # add passenger to queue
-            self.passenger_queue.append(p)
+            p["start_time"] = datetime.datetime.now().strftime("%H:%M:%S.%f")
+        self.passenger_queue += passenger_list
+        self.push_call_button(passenger_list)
 
+    def push_call_button(self, passenger_list):
+        for p in passenger_list:
             destination = int(p["destination"])
             if not self.up_pressed:
                 self.up_pressed = destination > self.level
@@ -128,8 +132,13 @@ class Floor:
         """
 
         if elevator["state"] == "passenger exiting":
-            self.arrived_passengers.extend(elevator["exit_list"])
-            logging.info(f"list arrived passengers: {self.arrived_passengers}")
+            exit_list = elevator["exit_list"]
+            for p in exit_list:
+                p["arrived_time"] = datetime.datetime.now().strftime("%H:%M:%S.%f")
+            self.arrived_passengers.extend(exit_list)
+            logging.info(
+                f"list arrived passengers: count: {len(self.arrived_passengers)}; list: {self.arrived_passengers}"
+            )
 
         # reply with passenger enter
         if len(self.passenger_queue) != 0:
@@ -149,6 +158,10 @@ class Floor:
             f"sending passenger entering list to elevator {self.get_elevator_id(message)}; payload: {payload}"
         )
         self.mqttc.publish(topic, json.dumps(payload))
+
+        # resend callButton message if there is still passengers in queue
+        if len(self.passenger_queue) > 0:
+            self.push_call_button(self.passenger_queue)
 
     def on_message(self, client, userdata, message):
         logging.info(
