@@ -55,11 +55,11 @@ class Elevator(urwid.WidgetWrap):
         statebox._selectable = False
         super().__init__(statebox)
 
-    def get_statebox(self):
+    def get_statebox(self) -> urwid.Text:
         return self._w.base_widget
 
-    def get_state(self):
-        return self.get_statebox.get_text()
+    def get_state(self) -> str:
+        return self.get_statebox().get_text()[0]
 
     def set_state(self, text: str):
         self.get_statebox().set_text(text)
