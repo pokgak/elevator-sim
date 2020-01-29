@@ -2,6 +2,7 @@ import os
 import urwid
 import asyncio
 import socket
+import json
 import paho.mqtt.client as mqtt
 
 FLOOR_OFFSET = 2
@@ -40,14 +41,14 @@ class Floor(urwid.WidgetWrap):
 
 
 class Elevator(urwid.WidgetWrap):
-    id: str
+    id: int
 
-    def __init__(self, id: str, text="IDLE", position: int = 0):
+    def __init__(self, id: int, text="IDLE", position: int = 0):
         self.position = position
         self.id = id
 
         statebox = urwid.Text(text, align="center")
-        statebox = urwid.LineBox(statebox, title=id)
+        statebox = urwid.LineBox(statebox, title=str(id))
         statebox = urwid.Filler(
             statebox,
             top=self.calculate_top_offset(position),
@@ -72,7 +73,7 @@ class Elevator(urwid.WidgetWrap):
     def set_position(self, position: int):
         self.position = position
         self._w = urwid.Filler(
-            urwid.LineBox(self.get_statebox(), title=self.id),
+            urwid.LineBox(self.get_statebox(), title=str(self.id)),
             top=self.calculate_top_offset(position),
             bottom=self.calculate_bottom_offset(position),
             valign="top",
@@ -149,7 +150,7 @@ class Dashboard:
 
         elevators = []
         for i in range(0, ELEVATOR_COUNT):
-            elevators.append(("fixed", ELEVATOR_WIDTH, Elevator(id="A")))
+            elevators.append(("fixed", ELEVATOR_WIDTH, Elevator(id=i)))
         self.elevators = urwid.Columns(elevators, min_width=7)
         elevators = urwid.Filler(self.elevators, "top")
 
@@ -207,7 +208,7 @@ class AsyncMQTT:
 
     client: mqtt.Client
 
-    def __init__(self, loop, dashboard):
+    def __init__(self, loop, dashboard: Dashboard):
         self.loop = loop
         self.dashboard = dashboard
 
@@ -219,16 +220,24 @@ class AsyncMQTT:
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
 
+        self.client.message_callback_add(f"elevator/+/status", self.on_elevator_status)
+
         aioh = AsyncioHelper(self.loop, self.client)
 
         self.client.connect("localhost", 1883)
         self.client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
 
     def on_connect(self, client, userdata, flags, rc):
-        client.subscribe("test")
+        client.subscribe("#")
+
+    def on_elevator_status(self, client, userdata, msg):
+        id = int(msg.topic.split("/")[1])
+        payload: dict = json.loads(msg.payload)
+
+        self.dashboard.get_elevator(id).set_state(str(payload["state"]))
 
     def on_message(self, client, userdata, msg):
-        print("HHLLOO")
+        # print("HHLLOO")
         pass
 
     def on_disconnect(self, client, userdata, rc):
