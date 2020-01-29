@@ -1,28 +1,11 @@
 version: '3'
-
-networks:
-  cps_sim:
-    driver: bridge
-    ipam:
-     config:
-       - subnet: 172.21.0.0/24
-
 services:
-  mqtt:
-    image: eclipse-mosquitto:latest
-    ports:
-      - "1883:1883"
-    networks:
-      - cps_sim
-
   # telegraf:
   #   image: telegraf:latest
   #   volumes:
   #     - ./gui/telegraf.conf:/etc/telegraf/telegraf.conf:ro
   #   depends_on:
   #     - influxdb
-  #   networks:
-  #     cps_sim:
 
   # influxdb:
   #   image: influxdb:latest
@@ -38,8 +21,6 @@ services:
   #   volumes:
   #   # Data persistency
   #   - ./gui/influxdb/data:/var/lib/influxdb
-  #   networks:
-  #     cps_sim:
 
   # grafana:
   #   image: grafana/grafana:latest
@@ -53,8 +34,11 @@ services:
   #   volumes:
   #   # Data persistency
   #     - ./gui/grafana/data:/var/lib/grafana
-  #   networks:
-  #     cps_sim:
+
+  mqtt:
+    image: eclipse-mosquitto:latest
+    ports:
+      - "1883:1883"
 
   controller:
       build: ./elevatorcontroller
@@ -66,24 +50,19 @@ services:
         - mqtt_host=mqtt
         - floor_count=4
         - elevator_count=1
-      networks:
-        cps_sim:
-          ipv4_address: 172.21.0.20
 
-  elevator1:
+  elevator0:
     container_name: elevator0
     build: ./elevator
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
-      - capacity=20
+      - capacity=10
       - mqtt_host=mqtt
       - elevator_id=0
     depends_on:
       - mqtt
       - controller
-    networks:
-      - cps_sim
 
   floor0:
     container_name: floor0
@@ -95,8 +74,6 @@ services:
     depends_on:
       - mqtt
       - controller
-    networks:
-      - cps_sim
 
   floor1:
     container_name: floor1
@@ -108,8 +85,6 @@ services:
     depends_on:
       - mqtt
       - controller
-    networks:
-      - cps_sim
 
   floor2:
     container_name: floor2
@@ -121,8 +96,6 @@ services:
     depends_on:
       - mqtt
       - controller
-    networks:
-      - cps_sim
 
   floor3:
     container_name: floor3
@@ -134,6 +107,4 @@ services:
     depends_on:
       - mqtt
       - controller
-    networks:
-      - cps_sim
 
