@@ -211,17 +211,6 @@ class AsyncMQTT:
         self.loop = loop
         self.dashboard = dashboard
 
-    def on_connect(self, client, userdata, flags, rc):
-        client.subscribe("test")
-
-    def on_message(self, client, userdata, msg):
-        print("HHLLOO")
-        pass
-
-    def on_disconnect(self, client, userdata, rc):
-        self.disconnected.set_result(rc)
-
-    async def start(self):
         self.disconnected = self.loop.create_future()
         self.got_message = None
 
@@ -235,14 +224,25 @@ class AsyncMQTT:
         self.client.connect("localhost", 1883)
         self.client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
 
+    def on_connect(self, client, userdata, flags, rc):
+        client.subscribe("test")
+
+    def on_message(self, client, userdata, msg):
+        print("HHLLOO")
+        pass
+
+    def on_disconnect(self, client, userdata, rc):
+        self.disconnected.set_result(rc)
+
+
 async def main(loop):
     dashboard = Dashboard()
     dashboard.urwid_loop.start()
 
-    await AsyncMQTT(loop, dashboard).start()
-
+    mqtt = AsyncMQTT(loop, dashboard)
     # workaround so that this will never end
     await loop.create_future()
+
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
