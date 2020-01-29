@@ -6,8 +6,11 @@ import json
 import paho.mqtt.client as mqtt
 
 FLOOR_OFFSET = 2
-FLOOR_COUNT = 5
-ELEVATOR_COUNT = 5
+FLOOR_COUNT = 10
+ELEVATOR_COUNT = 8
+
+STATUS_HEIGHT = FLOOR_OFFSET * FLOOR_COUNT + 3
+STATISTICS_HEIGHT = 3
 
 TEXTBOX_WIDTH = 8
 ELEVATOR_WIDTH = TEXTBOX_WIDTH + 2
@@ -43,11 +46,12 @@ class Floor(urwid.WidgetWrap):
 class Elevator(urwid.WidgetWrap):
     id: int
 
-    def __init__(self, id: int, text="IDLE", position: int = 0):
+    def __init__(self, id: int, state="IDLE", position: int = 0, capacity: int = 0):
         self.position = position
         self.id = id
+        self.capacity = capacity
 
-        statebox = urwid.Text(text, align="center")
+        statebox = urwid.Text(state + f"|{self.capacity}", align="center")
         statebox = urwid.LineBox(statebox, title=str(id))
         statebox = urwid.Filler(
             statebox,
@@ -65,7 +69,7 @@ class Elevator(urwid.WidgetWrap):
         return self.get_statebox().get_text()[0]
 
     def set_state(self, text: str):
-        self.get_statebox().set_text(text)
+        self.get_statebox().set_text(text + f"|{self.capacity}")
 
     def get_position(self) -> int:
         return self.position
@@ -154,10 +158,34 @@ class Dashboard:
         self.elevators = urwid.Columns(elevators, min_width=7)
         elevators = urwid.Filler(self.elevators, "top")
 
-        status = urwid.Columns([floors, ("fixed", 1, vline), self.elevators])
+        status = urwid.Columns(
+            [
+                floors,
+                ("fixed", 1, vline),
+                (ELEVATOR_WIDTH * ELEVATOR_COUNT, self.elevators),
+            ]
+        )
         status = urwid.LineBox(status, title="Status")
 
-        return status
+        # TODO
+        arrived_count = 10
+        expected = 20
+        total_wait_time = 100
+
+        s_elements = [
+            urwid.Text(
+                f"Arrived: {arrived_count}/{expected} | Average waiting time: {total_wait_time / arrived_count}",
+                align="center",
+            ),
+            urwid.Divider(),
+            urwid.Text(f"Floor0: 3/5 arrived", align="center"),
+        ]
+
+        statistics = urwid.Pile(s_elements)
+        statistics = urwid.Filler(statistics, "top")
+        statistics = urwid.LineBox(statistics, title="Statistics")
+
+        return urwid.Pile([(len(s_elements) + 2, statistics), (STATUS_HEIGHT, status)])
 
     def get_elevator(self, idx: int) -> Elevator:
         return self.elevators.contents[idx][0]
@@ -167,7 +195,6 @@ class Dashboard:
 
     def reset(self):
         self.frame = self.build_dashboard()
-
 
 
 class AsyncioHelper:
