@@ -1,9 +1,10 @@
 import os
 import urwid
+import asyncio
 
 
 FLOOR_OFFSET = 2
-FLOOR_COUNT = 10
+FLOOR_COUNT = 5
 ELEVATOR_COUNT = 5
 
 
@@ -39,7 +40,7 @@ class Elevator(urwid.WidgetWrap):
     top_offset: int
     bottom_offset: int
 
-    def __init__(self, id: str, text="default", position: int = 0):
+    def __init__(self, id: str, text="default", position: int = 9):
         self.top_offset = FLOOR_OFFSET * (FLOOR_COUNT - position - 1)
         self.bottom_offset = FLOOR_OFFSET * position
 
@@ -52,11 +53,11 @@ class Elevator(urwid.WidgetWrap):
         status = urwid.Filler(urwid.Text(self.status, align="center"))
 
         elements = [
+            (3 + self.top_offset + self.bottom_offset, textbox),
+            urwid.Divider("-"),
             (1, title),
             urwid.Divider("-"),
             (1, status),
-            urwid.Divider("-"),
-            (3 + self.top_offset + self.bottom_offset, textbox),
         ]
         w = urwid.Pile(elements)
         w._selectable = False
@@ -82,6 +83,14 @@ class Elevator(urwid.WidgetWrap):
 
 class Simulation(object):
 
+    def __init__(self):
+        self.asyncio_loop.call_later(1, self.update_status_text)
+        self.urwid_loop.run()
+
+    def update_status_text(self):
+        self.status_text.set_text(self.status_text.get_text()[0] + "HAHA")
+        self.asyncio_loop.call_later(0.5, self.update_status_text)
+
     palette = [
         # ("body", "dark cyan", "", "standout"),
         # ("focus", "dark red", "", "standout"),
@@ -105,20 +114,26 @@ class Simulation(object):
         floors.append(("fixed", 1, hline))
 
     floors = urwid.Pile(floors)
-    floors = urwid.Filler(floors, "bottom")
+    floors = urwid.Filler(floors, "top")
 
     elevators = []
     for i in range(0, ELEVATOR_COUNT):
         elevators.append(("fixed", 10, Elevator(id="A")))
     elevators = urwid.Columns(elevators)
-    elevators = urwid.Filler(elevators, "bottom")
+    elevators = urwid.Filler(elevators, "top")
 
-    status_content = urwid.Columns([floors, ("fixed", 1, vline), elevators])
-    status = urwid.LineBox(status_content, title="Status")
+    # status = urwid.Columns([floors, ("fixed", 1, vline), elevators])
+    # status = urwid.LineBox(status, title="Status")
 
-    box = urwid.Frame(status)
-    loop = urwid.MainLoop(box, palette)
-    loop.run()
+    status_text = urwid.Text("HELLO")
+    status = urwid.ListBox([status_text])
+
+    frame = urwid.Frame(status)
+
+    asyncio_loop = asyncio.get_event_loop()
+    urwid_loop = urwid.MainLoop(
+        frame, palette, event_loop=urwid.AsyncioEventLoop(loop=asyncio_loop)
+    )
 
 
 if __name__ == "__main__":
