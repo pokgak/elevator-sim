@@ -14,27 +14,28 @@ ELEVATOR_WIDTH = TEXTBOX_WIDTH + 2
 class Floor(urwid.WidgetWrap):
     _sizing = frozenset(["box"])
 
-    def __init__(
-        self, floor: int, waiting_count: int = 0,
-    ):
-        self.floor = floor
+    def __init__(self, floor: int, waiting_count: int = 0):
+        self.floor: int = floor
+        self.waiting_count: int = waiting_count
         self._selectable = False
 
-        elements = []
-        # if self.floor != floor_max:
-        #     elements.append(urwid.Divider("-"))
-        elements.append(
-            urwid.Padding(
-                urwid.Text(
-                    " 0" * waiting_count + f" [{floor}]", align="right", wrap="ellipsis"
-                ),
-                right=1,
-            )
+        queue = urwid.Text(
+            " 0" * waiting_count + f" [Floor: {self.floor}]",
+            align="right",
+            wrap="ellipsis",
         )
-        # if self.floor != 0:
-        #     elements.append(urwid.Divider("-"))
-        w = urwid.ListBox(urwid.SimpleListWalker(elements))
-        super().__init__(w)
+        queue = urwid.Padding(queue, right=1)
+        queue = urwid.Filler(queue)
+        super().__init__(queue)
+
+    def get_waiting_count(self):
+        return self.waiting_count
+
+    def set_waiting_count(self, count: int):
+        self.waiting_count = count
+        self._w.base_widget.set_text(
+            " 0" * self.waiting_count + f" [Floor: {self.floor}]"
+        )
 
 
 class Elevator(urwid.WidgetWrap):
@@ -103,19 +104,24 @@ class Simulation(object):
             event_loop=urwid.AsyncioEventLoop(loop=self.asyncio_loop),
         )
 
-        test = self.get_elevator(0)
+        e = self.get_elevator(0)
 
-        self.asyncio_loop.call_later(1, test.set_state, "UP")
-        self.asyncio_loop.call_later(2, test.set_state, "DOWN")
-        self.asyncio_loop.call_later(3, test.set_state, "ENTER")
-        self.asyncio_loop.call_later(4, test.set_state, "EXIT")
-        self.asyncio_loop.call_later(5, test.set_state, "IDLE")
+        self.asyncio_loop.call_later(1, e.set_state, "UP")
+        self.asyncio_loop.call_later(2, e.set_state, "DOWN")
+        self.asyncio_loop.call_later(3, e.set_state, "ENTER")
+        self.asyncio_loop.call_later(4, e.set_state, "EXIT")
+        self.asyncio_loop.call_later(5, e.set_state, "IDLE")
 
-        self.asyncio_loop.call_later(1, test.set_position, 1)
-        self.asyncio_loop.call_later(2, test.set_position, 2)
-        self.asyncio_loop.call_later(3, test.set_position, 3)
-        self.asyncio_loop.call_later(4, test.set_position, 4)
-        self.asyncio_loop.call_later(5, test.set_position, 0)
+        self.asyncio_loop.call_later(1, e.set_position, 1)
+        self.asyncio_loop.call_later(2, e.set_position, 2)
+        self.asyncio_loop.call_later(3, e.set_position, 3)
+        self.asyncio_loop.call_later(4, e.set_position, 4)
+        self.asyncio_loop.call_later(5, e.set_position, 0)
+
+        f = self.get_floor(3)
+        print(f)
+
+        self.asyncio_loop.call_later(3, f.set_waiting_count, f.get_waiting_count() + 10)
 
         self.urwid_loop.run()
 
@@ -151,6 +157,9 @@ class Simulation(object):
 
     def get_elevator(self, idx: int) -> Elevator:
         return self.elevators.contents[idx][0]
+
+    def get_floor(self, floor: int) -> Floor:
+        return self.floors.contents[floor][0]
 
 
 if __name__ == "__main__":
