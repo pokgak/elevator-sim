@@ -1,7 +1,8 @@
 import os
 import urwid
 import asyncio
-
+import socket
+import paho.mqtt.client as mqtt
 
 FLOOR_OFFSET = 2
 FLOOR_COUNT = 5
@@ -84,7 +85,7 @@ class Elevator(urwid.WidgetWrap):
         return FLOOR_OFFSET * position
 
 
-class Simulation(object):
+class Dashboard:
 
     palette = [
         # ("body", "dark cyan", "", "standout"),
@@ -94,10 +95,14 @@ class Simulation(object):
         ("vline", "black", "light gray", "standout"),
     ]
 
+    asyncio_loop: asyncio.AbstractEventLoop
+    urwid_loop: urwid.MainLoop
+
     def __init__(self):
+        self.asyncio_loop = asyncio.get_event_loop()
+
         frame = self.build_dashboard()
 
-        self.asyncio_loop = asyncio.get_event_loop()
         self.urwid_loop = urwid.MainLoop(
             frame,
             self.palette,
@@ -122,8 +127,6 @@ class Simulation(object):
         print(f)
 
         self.asyncio_loop.call_later(3, f.set_waiting_count, f.get_waiting_count() + 10)
-
-        self.urwid_loop.run()
 
     def build_dashboard(self):
         # FIXME: replace by actual value
@@ -162,5 +165,88 @@ class Simulation(object):
         return self.floors.contents[floor][0]
 
 
+class AsyncioHelper:
+    def __init__(self, loop, client):
+        self.loop = loop
+        self.client = client
+        self.client.on_socket_open = self.on_socket_open
+        self.client.on_socket_close = self.on_socket_close
+        self.client.on_socket_register_write = self.on_socket_register_write
+        self.client.on_socket_unregister_write = self.on_socket_unregister_write
+
+    def on_socket_open(self, client, userdata, sock):
+        def cb():
+            client.loop_read()
+
+        self.loop.add_reader(sock, cb)
+        self.misc = self.loop.create_task(self.misc_loop())
+
+    def on_socket_close(self, client, userdata, sock):
+        self.loop.remove_reader(sock)
+        self.misc.cancel()
+
+    def on_socket_register_write(self, client, userdata, sock):
+        def cb():
+            client.loop_write()
+
+        self.loop.add_writer(sock, cb)
+
+    def on_socket_unregister_write(self, client, userdata, sock):
+        self.loop.remove_writer(sock)
+
+    async def misc_loop(self):
+        while self.client.loop_misc() == mqtt.MQTT_ERR_SUCCESS:
+            try:
+                await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                break
+        print("misc_loop finished")
+
+
+class AsyncMQTT:
+
+    client: mqtt.Client
+
+    def __init__(self, loop, dashboard):
+        self.loop = loop
+        self.dashboard = dashboard
+
+    def on_connect(self, client, userdata, flags, rc):
+        client.subscribe("test")
+
+    def on_message(self, client, userdata, msg):
+        print("HHLLOO")
+        pass
+
+    def on_disconnect(self, client, userdata, rc):
+        self.disconnected.set_result(rc)
+
+    async def start(self):
+        self.disconnected = self.loop.create_future()
+        self.got_message = None
+
+        self.client = mqtt.Client(client_id="test")
+        self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
+        self.client.on_disconnect = self.on_disconnect
+
+        aioh = AsyncioHelper(self.loop, self.client)
+
+        self.client.connect("localhost", 1883)
+        self.client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
+
+async def main(loop):
+    dashboard = Dashboard()
+    dashboard.urwid_loop.start()
+
+    await AsyncMQTT(loop, dashboard).start()
+
+    # workaround so that this will never end
+    await loop.create_future()
+
 if __name__ == "__main__":
-    Simulation()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main(loop))
+    # loop.create_task(main())
+    # loop.run_forever()
+    # loop.run_until_complete(main())
