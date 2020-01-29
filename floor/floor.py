@@ -15,6 +15,9 @@ import paho.mqtt.client as mqtt
 class Floor:
     def __init__(self, level: int):
         logging.info("ELEVATOR INIT")
+        self.orig_params = {
+            "level": level,
+        }
 
         self.level = level
 
@@ -24,13 +27,30 @@ class Floor:
         self.up_pressed = False
         self.down_pressed = False
 
-        self.mqttc = mqtt.Client()
+        self.client_id=f"floor{level}"
+
+    def start(self, hostname: str = "mqtt", port: int = 1883):
+        self.mqttc = mqtt.Client(client_id=self.client_id)
         self.mqttc.on_message = self.on_message
         self.mqttc.on_connect = self.on_connect
-
-    def mqtt_init(self, hostname: str = "localhost", port: int = 1883):
         logging.info("Connecting to broker. Please wait...")
         self.mqttc.connect(hostname, port)
+        logging.info("starting MQTT loop")
+        self.mqttc.loop_forever()
+
+    def reset(self):
+        Floor.__init__(
+            self,
+            self.orig_params["level"],
+        )
+        time.sleep(1)
+        self.start()
+
+    def on_reset(self, client, userdata, msg):
+        logging.info("resetting to initial state")
+        time.sleep(2)
+        self.reset()
+        logging.info("reset finished")
 
     def on_connect(self, client, userdata, flags, rc):
         logging.info("Connected to broker!")
@@ -42,6 +62,7 @@ class Floor:
                 f"simulation/config/passengerList/floor/{self.level}",
                 self.config_passenger_list_cb,
             ),
+            ("simulation/reset", self.on_reset),
         ]
 
         # subscribe to multiple topics in single SUBSCRIBE command
@@ -181,10 +202,6 @@ class Floor:
         """
         return int(str(msg.topic).split("/")[1])
 
-    def run(self):
-        logging.info("starting MQTT loop")
-        self.mqttc.loop_forever()
-
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser(description="simulator for mqtt messages")
@@ -224,5 +241,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
     floor = Floor(level=int(floor_level))
-    floor.mqtt_init(hostname=host, port=int(port))
-    floor.run()
+    floor.start(hostname=host, port=int(port))

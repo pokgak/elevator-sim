@@ -24,6 +24,11 @@ EXIT_IDLE_DELAY = 1
 class Elevator:
     def __init__(self, id: int, waittime=DEFAULT_WAIT_TIME, startfloor: int = 0):
         logging.info("ELEVATOR INIT")
+        self.orig_params = {
+            "id": id,
+            "waittime": waittime,
+            "startfloor": startfloor,
+        }
 
         self.id = id
         self.floor = startfloor
@@ -34,15 +39,34 @@ class Elevator:
         # passenger in form {"start": {startFloor}, "destination": {destFloor}}
         self.passengers = []
 
-        self.exit_idle_timer : threading.Timer = None
+        self.exit_idle_timer: threading.Timer = None
+        self.client_id=f"elevator{id}"
 
-        self.mqttc = mqtt.Client()
+    def start(self, hostname: str = "mqtt", port: int = 1883):
+        self.mqttc = mqtt.Client(client_id=self.client_id)
         self.mqttc.on_message = self.on_message
         self.mqttc.on_connect = self.on_connect
-
-    def mqtt_init(self, hostname: str = "localhost", port: int = 1883):
         logging.info("Connecting to broker. Please wait...")
         self.mqttc.connect(hostname, port)
+        logging.info("starting MQTT loop")
+        self.mqttc.loop_forever()
+
+    def reset(self):
+        Elevator.__init__(
+            self,
+            self.orig_params["id"],
+            self.orig_params["waittime"],
+            self.orig_params["startfloor"],
+        )
+
+        time.sleep(1)
+        self.start()
+
+    def on_reset(self, client, userdata, msg):
+        logging.info("resetting to initial state")
+        time.sleep(1)
+        self.reset()
+        logging.info("reset finished")
 
     def on_connect(self, client, userdata, flags, rc):
         logging.info("Connected to broker!")
@@ -54,6 +78,7 @@ class Elevator:
         topics = [
             (f"elevator/{self.id}/nextDestination", self.next_dest_cb),
             (f"elevator/{self.id}/passengerEnter", self.passenger_enter_cb),
+            ("simulation/reset", self.on_reset),
         ]
 
         # subscribe to multiple topics in single SUBSCRIBE command
@@ -97,10 +122,12 @@ class Elevator:
         self.delayed_update_status(IDLE)
 
     def delayed_update_status(self, state: str):
-        logging.info(f"scheduling state update to '{state}' after {EXIT_IDLE_DELAY} seconds")
+        logging.info(
+            f"scheduling state update to '{state}' after {EXIT_IDLE_DELAY} seconds"
+        )
         self.exit_idle_timer = threading.Timer(
-                float(EXIT_IDLE_DELAY), self.update_status, kwargs={"state": state}
-            )
+            float(EXIT_IDLE_DELAY), self.update_status, kwargs={"state": state}
+        )
         self.exit_idle_timer.start()
 
     def get_passenger_exiting(self, floor: int):
@@ -213,10 +240,6 @@ class Elevator:
         logging.info(f"updating status to '{payload}' on topic '{topic}''")
         self.mqttc.publish(topic, payload)
 
-    def run(self):
-        logging.info("starting MQTT loop")
-        self.mqttc.loop_forever()
-
 
 if __name__ == "__main__":
     argp = argparse.ArgumentParser(description="simulator for mqtt messages")
@@ -260,5 +283,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
     elevator = Elevator(id=int(eid), startfloor=int(0))
-    elevator.mqtt_init(hostname=host, port=int(port))
-    elevator.run()
+    elevator.start(hostname=host, port=int(port))

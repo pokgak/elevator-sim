@@ -70,7 +70,7 @@ services:
         cps_sim:
           ipv4_address: 172.21.0.20
 
-  elevator1:
+  elevator0:
     container_name: elevator0
     build: ./elevator
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator

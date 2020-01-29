@@ -102,10 +102,10 @@ class Dashboard:
     def __init__(self):
         self.asyncio_loop = asyncio.get_event_loop()
 
-        frame = self.build_dashboard()
+        self.frame = self.build_dashboard()
 
         self.urwid_loop = urwid.MainLoop(
-            frame,
+            self.frame,
             self.palette,
             event_loop=urwid.AsyncioEventLoop(loop=self.asyncio_loop),
         )
@@ -165,6 +165,10 @@ class Dashboard:
     def get_floor(self, floor: int) -> Floor:
         return self.floors.contents[floor][0]
 
+    def reset(self):
+        self.frame = self.build_dashboard()
+
+
 
 class AsyncioHelper:
     def __init__(self, loop, client):
@@ -215,12 +219,13 @@ class AsyncMQTT:
         self.disconnected = self.loop.create_future()
         self.got_message = None
 
-        self.client = mqtt.Client(client_id="test")
+        self.client = mqtt.Client(client_id="dashboard")
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
 
         self.client.message_callback_add(f"elevator/+/status", self.on_elevator_status)
+        self.client.message_callback_add(f"simulation/reset", self.on_simulation_reset)
 
         aioh = AsyncioHelper(self.loop, self.client)
 
@@ -235,6 +240,10 @@ class AsyncMQTT:
         payload: dict = json.loads(msg.payload)
 
         self.dashboard.get_elevator(id).set_state(str(payload["state"]))
+
+    def on_simulation_reset(self, client, userdata, msg):
+        # message are ignored
+        self.dashboard.reset()
 
     def on_message(self, client, userdata, msg):
         # print("HHLLOO")

@@ -42,15 +42,42 @@ class ElevatorController:
 
     def __init__(self, floor_count: int, elevator_count: int):
         logging.info("Init ElevatorController")
+        self.orig_params = {
+            "floor_count": floor_count,
+            "elevator_count": elevator_count,
+        }
+
         self.floors = {
             level: {"up_pushed": False, "down_pushed": False}
             for level in range(0, floor_count)
         }
 
+    def start(self, host = "mqtt", port = 1883):
+        self.mqttc = mqtt.Client(client_id="controller")
+        self.mqttc.connect(host, int(port))
+        self.mqttc.on_message = self.on_message
+        self.mqttc.on_connect = self.on_connect
+
+        self.mqttc.loop_forever()
+
+    def reset(self):
+        self.elevators = dict()
+        self.floors = dict()
+        ElevatorController.__init__(
+            self, self.orig_params["floor_count"], self.orig_params["elevator_count"]
+        )
+
+        self.start()
+
+    def on_reset(self, mqttc, obj, msg):
+        logging.info("resetting to initial state")
+        self.reset()
+
     def on_message(self, mqttc, obj, msg):
         logging.info(
             "No handler specified for topic {}: '{}'".format(msg.topic, msg.payload)
         )
+
 
     def on_connect(self, client, userdata, flags, rc):
         logging.info("Connected to MQTT broker. Subscribing to topics")
@@ -60,6 +87,7 @@ class ElevatorController:
             ("elevator/+/status", self.elevator_status_cb),
             ("elevator/+/floorSelected", self.elevator_floorSelected_cb),
             ("floor/+/callButton/isPushed/+", self.floor_callButtonPushed_cb),
+            ("simulation/reset", self.on_reset),
             # ("calendar/#", self.calendar_handler),
         ]
 
@@ -167,7 +195,9 @@ class ElevatorController:
             if len(self.elevators[elevator_id]["queue"]) > 0:
                 # send next destination
                 topic = f"elevator/{elevator_id}/nextDestination"
-                self.mqttc.publish(topic, int(self.elevators[elevator_id]["queue"].popleft()))
+                self.mqttc.publish(
+                    topic, int(self.elevators[elevator_id]["queue"].popleft())
+                )
 
     def add_elevator(self, id: int):
         self.elevators[id] = {"id": id, "queue": deque()}
@@ -231,14 +261,6 @@ class ElevatorController:
         # floor/{level}/callButton/isPushed/{up | down}
         return topic.split("/")[-1]
 
-    def start(self, host, port):
-        self.mqttc = mqtt.Client()
-        self.mqttc.connect(host, int(port))
-        self.mqttc.on_message = self.on_message
-        self.mqttc.on_connect = self.on_connect
-
-        self.mqttc.loop_forever()
-
 
 class Simulator:
     def __init__(self, loglevel, floor_count: int, elevator_count: int):
@@ -252,7 +274,7 @@ class Simulator:
             floor_count=floor_count, elevator_count=elevator_count
         )
 
-    def start(self, host="localhost", port=1883):
+    def start(self, host="mqtt", port=1883):
         logging.info("Starting simulation")
 
         self.controller.start(host, port)
@@ -287,7 +309,6 @@ if __name__ == "__main__":
     floor_count = os.getenv("floor_count")
     elevator_count = os.getenv("elevator_count")
 
-    simulator = Simulator(
+    Simulator(
         getattr(logging, loglevel.upper()), int(floor_count), int(elevator_count)
-    )
-    simulator.start(host=host, port=port)
+    ).start()
