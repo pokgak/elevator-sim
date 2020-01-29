@@ -1,40 +1,5 @@
 version: '3'
 services:
-  # telegraf:
-  #   image: telegraf:latest
-  #   volumes:
-  #     - ./gui/telegraf.conf:/etc/telegraf/telegraf.conf:ro
-  #   depends_on:
-  #     - influxdb
-
-  # influxdb:
-  #   image: influxdb:latest
-  #   ports:
-  #     - "8083:8083"
-  #     - "8086:8086"
-  #     - "8090:8090"
-  #   environment:
-  #     - INFLUXDB_DATA_ENGINE=tsm1
-  #     - INFLUXDB_REPORTING_DISABLED=false
-  #   depends_on:
-  #     - mqtt
-  #   volumes:
-  #   # Data persistency
-  #   - ./gui/influxdb/data:/var/lib/influxdb
-
-  # grafana:
-  #   image: grafana/grafana:latest
-  #   user: "0"
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - GF_INSTALL_PLUGINS=grafana-clock-panel,briangann-gauge-panel,natel-plotly-panel,grafana-simple-json-datasource
-  #   depends_on:
-  #     - influxdb
-  #   volumes:
-  #   # Data persistency
-  #     - ./gui/grafana/data:/var/lib/grafana
-
   mqtt:
     image: eclipse-mosquitto:latest
     ports:
