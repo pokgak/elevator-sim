@@ -14,7 +14,7 @@ from components import (  # pylint: disable=import-error
 ELEVATOR_COUNT = 6
 
 STATUS_HEIGHT = FLOOR_OFFSET * FLOOR_COUNT + 3
-STATISTICS_HEIGHT = 3
+STATISTICS_HEIGHT = 9
 
 TEXTBOX_WIDTH = 8
 ELEVATOR_WIDTH = TEXTBOX_WIDTH + 2
@@ -83,24 +83,32 @@ class DashboardUI:
         )
         status = urwid.LineBox(status, title="Status")
 
-        # TODO
-        arrived_count = 10
-        expected = 20
+        self.passenger_count = [
+            {"floor": i, "arrived": 0, "expected": 0} for i in range(0, FLOOR_COUNT)
+        ]
 
         arrived_elements = [
-            urwid.Text("Arrived Count", align="center"),
-            urwid.Divider("-"),
-            urwid.Text(f"Floor 0: 3/5 arrived | Floor 1: 3/5 arrived", align="center"),
-            urwid.Text(f"Floor 2: 3/5 arrived | Floor 3: 3/5 arrived", align="center"),
-            urwid.Text(f"Floor 4: 3/5 arrived | Floor 5: 3/5 arrived", align="center"),
-            urwid.Text(f"Floor 6: 3/5 arrived | Floor 7: 3/5 arrived", align="center"),
-            urwid.Text(f"Floor 8: 3/5 arrived | Floor 9: 3/5 arrived", align="center"),
-            urwid.Divider(" "),
-            urwid.Text(f"Total: {arrived_count}/{expected}", align="center"),
+            urwid.Text(
+                f"Floor {c['floor']}: {c['arrived']}/{c['expected']}", align="center"
+            )
+            for c in self.passenger_count
         ]
-        arrived = urwid.Pile(arrived_elements)
+        idx_middle = int(len(arrived_elements) / 2)
+        arrived_left = urwid.Pile(arrived_elements[:idx_middle])
+        arrived_right = urwid.Pile(arrived_elements[idx_middle:])
+        self.arrived_values = urwid.Columns([arrived_left, arrived_right])
 
-        wait_time_title = urwid.Text("Waiting Time", align="center")
+        sum_expected = 0
+        sum_arrived = 0
+        self.arrived_total: urwid.Text = urwid.Text(
+            f"Total: {sum_arrived}/{sum_expected}", align="center"
+        )
+
+        arrived = urwid.Pile(
+            [self.arrived_values, urwid.Divider("-"), self.arrived_total]
+        )
+        arrived = urwid.LineBox(arrived, title="Passenger Count (arrived/expected)")
+
         wait_time_elements = [
             urwid.Text(f"Floor {f}: 0:00:00.000000", align="center")
             for f in range(0, FLOOR_COUNT)
@@ -116,31 +124,61 @@ class DashboardUI:
             f"Total: 0:00:00.000000 | Average: 0:00:00.000000", align="center",
         )
         wait_time = urwid.Pile(
-            [
-                wait_time_title,
-                urwid.Divider("-"),
-                self.wait_time_values,
-                urwid.Divider(" "),
-                self.wait_time_total,
-            ]
+            [self.wait_time_values, urwid.Divider("-"), self.wait_time_total]
         )
+        wait_time._selectable = False
+        wait_time = urwid.Padding(wait_time, right=1)
+        wait_time = urwid.LineBox(wait_time, title="Waiting Time")
 
-        queue_elements = [
-            urwid.Text("Elevator Destination Queues", align="center"),
-            urwid.Divider("-"),
-        ]
-        for i in range(0, ELEVATOR_COUNT):
-            queue_elements.append(urwid.Text(f"E{i}: []"))
+        queue_elements = [urwid.Text(f"E{i}: []") for i in range(0, ELEVATOR_COUNT)]
         self.queue = urwid.Pile(queue_elements)
+        self.queue._selectable = False
+        queue_box = self.queue
+        queue_box = urwid.Padding(queue_box, left=1)
+        queue_box = urwid.Filler(queue_box, valign="middle")
+        queue_box = urwid.LineBox(queue_box, title="Elevator Destination Queue")
 
-        statistics = urwid.Columns([arrived, wait_time, self.queue])
+        statistics = urwid.Columns(
+            [arrived, wait_time, urwid.BoxAdapter(queue_box, STATISTICS_HEIGHT)]
+        )
         statistics = urwid.Filler(statistics)
-        statistics = urwid.LineBox(statistics, title="Statistics")
 
         # FIXME: replace len(arrived_elements) with more general height
-        return urwid.Pile(
-            [(len(arrived_elements) + 2, statistics), (STATUS_HEIGHT, status)]
+        return urwid.Pile([(STATISTICS_HEIGHT, statistics), (STATUS_HEIGHT, status)])
+
+    def get_passenger_count(self, floor: int) -> urwid.Text:
+        # left or right
+        if floor < FLOOR_COUNT / 2:
+            section = self.arrived_values.contents[0][0]
+            idx_in_section = int(floor)
+        else:
+            section = self.arrived_values.contents[1][0]
+            idx_in_section = int(floor - FLOOR_COUNT / 2)
+
+        # access time in the section
+        return section.contents[idx_in_section][0]
+
+    def set_passenger_count(
+        self, floor: int, arrived: int = None, expected: int = None
+    ):
+        c = self.passenger_count[floor]
+        if arrived is not None:
+            c["arrived"] += arrived
+        if expected is not None:
+            c["expected"] += expected
+        self.get_passenger_count(floor).set_text(
+            f"Floor {floor}: {c['arrived']}/{c['expected']}"
         )
+
+        self.update_total_passenger_count()
+
+    def update_total_passenger_count(self):
+        total_arrived = 0
+        total_expected = 0
+        for c in self.passenger_count:
+            total_arrived += int(c["arrived"])
+            total_expected += int(c["expected"])
+        self.arrived_total.set_text(f"Total: {total_arrived}/{total_expected}")
 
     def get_wait_time(self, floor: int) -> urwid.Text:
         # left or right
@@ -159,7 +197,7 @@ class DashboardUI:
 
     def get_queue(self, id: int) -> urwid.Text:
         # skip the header and divider '-'
-        return self.queue.contents[2 + id][0]
+        return self.queue.contents[id][0]
 
     def set_queue(self, id: int, queue: str):
         self.get_queue(id).set_text(f"E{id}: {queue}")

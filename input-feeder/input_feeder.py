@@ -4,7 +4,6 @@
 import argparse
 import asyncio
 import os
-import time
 import yaml
 import json
 
@@ -24,8 +23,10 @@ def init_mqtt(host: str, port: int) -> mqtt.Client:
 def on_connect(client, userdata, flags, rc):
     print("connected")
 
+
 def get_floor_topic(floor: int):
     return f"simulation/config/passengerList/floor/{floor}"
+
 
 async def delayed_publish(delay: int, floor: int, passengers):
     """
@@ -42,17 +43,23 @@ async def delayed_publish(delay: int, floor: int, passengers):
     mqttc.publish(topic, json.dumps(payload))
     print(f"published passenger: {payload}; start: {floor}")
 
+
 async def main(samples: str):
     schedule = []
     samples = yaml.load(samples, Loader=yaml.BaseLoader)
+
+    FLOOR_COUNT = 10
+    expected = {str(i): 0 for i in range(0, FLOOR_COUNT)}
 
     for s in samples:
         time = int(s["time"])
         for f in s["floors"]:
             start_floor = int(f["start"])
             passengers = f["passengers"]
-            schedule.append(delayed_publish(time , start_floor, passengers))
-
+            schedule.append(delayed_publish(time, start_floor, passengers))
+            for p in passengers:
+                expected[str(p["destination"])] += 1
+    mqttc.publish("simulation/passengers/expected", json.dumps(expected))
     await asyncio.gather(*schedule)
     print("finished feeding inputs")
 
@@ -87,7 +94,7 @@ if __name__ == "__main__":
     # print("Sleeping for 3 seconds before start sending inputs")
     # time.sleep(3)
     print("Start!")
-    samples = open(samples_file, 'r').read()
+    samples = open(samples_file, "r").read()
     asyncio.run(main(samples))
 
     mqttc.disconnect()

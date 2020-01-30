@@ -65,6 +65,9 @@ class AsyncMQTT:
 
         self.client.message_callback_add(f"simulation/reset", self.on_simulation_reset)
         self.client.message_callback_add(
+            "simulation/passengers/expected", self.on_expected_passengers
+        )
+        self.client.message_callback_add(
             f"floor/+/arrived_passenger", self.on_arrived_passenger
         )
         self.client.message_callback_add(f"elevator/+/status", self.on_elevator_status)
@@ -84,11 +87,17 @@ class AsyncMQTT:
     def on_connect(self, client, userdata, flags, rc):
         client.subscribe("#")
 
+    def on_expected_passengers(self, client, userdata, msg):
+        expected = json.loads(msg.payload)
+        for f in expected.keys():
+            self.dashboard.set_passenger_count(int(f), expected=expected[f])
+
     def on_arrived_passenger(self, client, userdata, msg):
         floor_level = int(msg.topic.split("/")[1])
         payload = json.loads(msg.payload)
 
         self.dashboard.set_total_wait_time(floor_level, payload["total_wait_time"])
+        self.dashboard.set_passenger_count(floor_level, arrived=payload["count"])
 
     def on_elevator_status(self, client, userdata, msg):
         id = int(msg.topic.split("/")[1])
