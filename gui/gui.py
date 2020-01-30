@@ -50,8 +50,9 @@ class Elevator(urwid.WidgetWrap):
         self.position = position
         self.id = id
         self.capacity = capacity
+        self.state = state
 
-        statebox = urwid.Text(state + f"|{self.capacity}", align="center")
+        statebox = urwid.Text(self.state + f"|{self.capacity}", align="center")
         statebox = urwid.LineBox(statebox, title=str(id))
         statebox = urwid.Filler(
             statebox,
@@ -65,11 +66,18 @@ class Elevator(urwid.WidgetWrap):
     def get_statebox(self) -> urwid.Text:
         return self._w.base_widget
 
-    def get_state(self) -> str:
-        return self.get_statebox().get_text()[0]
+    def set_statebox_text(self, state: str = None, capacity: int = None):
+        if state is not None:
+            self.state = state
+        if capacity is not None:
+            self.capacity = capacity
+        self.get_statebox().set_text(f"{self.state}|{self.capacity}")
 
-    def set_state(self, text: str):
-        self.get_statebox().set_text(text + f"|{self.capacity}")
+    def get_capacity(self) -> int:
+        return self.capacity
+
+    def get_state(self) -> str:
+        return self.state
 
     def get_position(self) -> int:
         return self.position
@@ -279,8 +287,12 @@ class AsyncMQTT:
 
         self.client.message_callback_add(f"simulation/reset", self.on_simulation_reset)
         self.client.message_callback_add(f"elevator/+/status", self.on_elevator_status)
-        self.client.message_callback_add(f"elevator/+/passengerEnter", self.on_passenger_enter)
-        self.client.message_callback_add(f"simulation/config/passengerList/floor/+", self.on_new_passengers)
+        self.client.message_callback_add(
+            f"elevator/+/passengerEnter", self.on_passenger_enter
+        )
+        self.client.message_callback_add(
+            f"simulation/config/passengerList/floor/+", self.on_new_passengers
+        )
 
         aioh = AsyncioHelper(self.loop, self.client)
 
@@ -294,7 +306,13 @@ class AsyncMQTT:
         id = int(msg.topic.split("/")[1])
         payload: dict = json.loads(msg.payload)
 
-        self.dashboard.get_elevator(id).set_state(str(payload["state"]))
+        elevator: Elevator = self.dashboard.get_elevator(id)
+        state = str(payload["state"])
+        capacity = int(payload["current_capacity"])
+        position = int(payload["current_position"])
+
+        elevator.set_statebox_text(state=state, capacity=capacity)
+        elevator.set_position(position)
 
     def on_new_passengers(self, client, userdata, msg):
         level = int(msg.topic.split("/")[4])
