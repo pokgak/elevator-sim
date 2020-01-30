@@ -19,6 +19,7 @@ class Floor:
             "level": level,
         }
 
+        self.mqttc: mqtt.Client = None
         self.level = level
 
         self.passenger_queue = deque()
@@ -30,13 +31,11 @@ class Floor:
         self.client_id=f"floor{level}"
 
     def start(self, hostname: str = "mqtt", port: int = 1883):
-        self.mqttc = mqtt.Client(client_id=self.client_id)
         self.mqttc.on_message = self.on_message
         self.mqttc.on_connect = self.on_connect
         logging.info("Connecting to broker. Please wait...")
         self.mqttc.connect(hostname, port)
         logging.info("starting MQTT loop")
-        self.mqttc.loop_forever()
 
     def reset(self):
         Floor.__init__(
@@ -124,10 +123,7 @@ class Floor:
         elevator = json.loads(message.payload)
         # skip if not at current floor
         # ignore driving up status
-        if (
-            elevator["state"] == "UP"
-            or elevator["current_position"] != self.level
-        ):
+        if elevator["current_position"] != self.level:
             return
 
         # FIXME: determine which direction the elevator is going to and only disable button
@@ -169,19 +165,16 @@ class Floor:
                 f"enter_list count: {using}; popping in range {range(0, using)}"
             )
             enter_list = [self.passenger_queue.pop() for n in range(0, using)]
-        else:
-            logging.info("no passenger entering. skipping...")
-            return
 
-        topic = f"elevator/{self.get_elevator_id(message)}/passengerEnter"
-        payload = {"floor": self.level, "enter_list": enter_list}
-        logging.info(
-            f"sending passenger entering list to elevator {self.get_elevator_id(message)}; payload: {payload}"
-        )
-        self.mqttc.publish(topic, json.dumps(payload))
+            topic = f"elevator/{self.get_elevator_id(message)}/passengerEnter"
+            payload = {"floor": self.level, "enter_list": enter_list}
+            logging.info(
+                f"sending passenger entering list to elevator {self.get_elevator_id(message)}; payload: {payload}"
+            )
+            self.mqttc.publish(topic, json.dumps(payload))
 
         # resend callButton message if there is still passengers in queue
-        if len(self.passenger_queue) > 0:
+        if elevator["state"] == "UP" and len(self.passenger_queue) > 0:
             self.push_call_button(self.passenger_queue)
 
     def on_message(self, client, userdata, message):
@@ -241,4 +234,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
     floor = Floor(level=int(floor_level))
+    floor.mqttc = mqtt.Client(client_id=f"floor{floor_level}")
     floor.start(hostname=host, port=int(port))
+    floor.mqttc.loop_forever()

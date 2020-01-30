@@ -15,6 +15,8 @@ STATISTICS_HEIGHT = 3
 TEXTBOX_WIDTH = 8
 ELEVATOR_WIDTH = TEXTBOX_WIDTH + 2
 
+UPDATE_PERIOD = 0.1
+
 
 class Floor(urwid.WidgetWrap):
     _sizing = frozenset(["box"])
@@ -116,7 +118,7 @@ class Dashboard:
 
         self.frame = self.build_dashboard()
 
-        self.urwid_loop = urwid.MainLoop(
+        self.urwid_loop: urwid.MainLoop = urwid.MainLoop(
             self.frame,
             self.palette,
             event_loop=urwid.AsyncioEventLoop(loop=self.asyncio_loop),
@@ -137,6 +139,13 @@ class Dashboard:
 
         # f = self.get_floor(3)
         # self.asyncio_loop.call_later(3, f.set_waiting_count, f.get_waiting_count() + 10)
+        self.urwid_loop.set_alarm_in(UPDATE_PERIOD, self.update_screen, self.urwid_loop)
+
+    def update_screen(self, loop, user_data=None):
+        # urwid will automatically call draw_screen() function after this callback
+        # we do this to control frequency of urwid update
+        # change UPDATE_PERIOD to adjust
+        self.urwid_loop.set_alarm_in(UPDATE_PERIOD, self.update_screen, self.urwid_loop)
 
     def build_dashboard(self):
         hline = urwid.AttrMap(urwid.SolidFill("\u2500"), "hline")
@@ -330,7 +339,8 @@ class AsyncMQTT:
 
         id = int(msg.topic.split("/")[1])
         elevator: Elevator = self.dashboard.get_elevator(id)
-        elevator.set_statebox_text(state="ENTER")
+        capacity = elevator.get_capacity() + enter_count
+        elevator.set_statebox_text(state="ENTER", capacity=capacity)
 
     def on_simulation_reset(self, client, userdata, msg):
         # message are ignored
