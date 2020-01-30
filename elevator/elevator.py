@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import logging
 import os
-import time
-import json
-import asyncio
 import threading
+import time
 from time import sleep
+from typing import List
 
 import paho.mqtt.client as mqtt
 
@@ -37,10 +37,10 @@ class Elevator:
         self.capacity = 0
         self.state = IDLE
         # passenger in form {"start": {startFloor}, "destination": {destFloor}}
-        self.passengers = []
+        self.passengers: List[dict] = []
 
-        self.exit_idle_timer: threading.Timer = None
-        self.client_id=f"elevator{id}"
+        self.exit_idle_timer: threading.Timer
+        self.client_id = f"elevator{id}"
 
     def start(self, hostname: str = "mqtt", port: int = 1883):
         self.mqttc = mqtt.Client(client_id=self.client_id)
@@ -148,7 +148,6 @@ class Elevator:
         """
 
         payload = json.loads(message.payload)
-        # assert (payload["floor"] == self.floor)#, f"Elevator id {self.id} not on same floor {payload["floor"]} while passenger entering"
 
         enter_list = payload["enter_list"]
 
@@ -196,7 +195,6 @@ class Elevator:
             self.update_status()
             floor_to_go -= 1
 
-
     def update_status(self, state: str = None, exit_list=None):
         """
         Publish status update
@@ -236,9 +234,9 @@ class Elevator:
             # update local state
             self.passengers = [p for p in self.passengers if p not in exit_list]
             self.capacity = capacity_after_exit
-            assert (
-                self.capacity >= 0
-            ), f"Elevator id {self.id} capacity less than 0: {self.capacity}"
+            # assert (
+            #     self.capacity >= 0
+            # ), f"Elevator id {self.id} capacity less than 0: {self.capacity}"
         else:
             payload["current_capacity"] = self.capacity
 

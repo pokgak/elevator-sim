@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import datetime
+import json
 import logging
 import os
 import time
-import datetime
-import json
-from time import sleep
 from collections import deque
 
 import paho.mqtt.client as mqtt
@@ -136,7 +135,7 @@ class Floor:
         payload = {
             "count": count,
             "total_wait_time": str(datetime.timedelta(milliseconds=total_wait_time)),
-            "average_wait_time": str(datetime.timedelta(milliseconds=average_msec))
+            "average_wait_time": str(datetime.timedelta(milliseconds=average_msec)),
         }
         self.mqttc.publish(topic, json.dumps(payload))
         logging.info(f"published arrived passengers: {payload}")

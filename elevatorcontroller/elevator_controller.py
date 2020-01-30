@@ -5,8 +5,6 @@ import logging
 import argparse
 from collections import deque
 
-from time import sleep
-
 import paho.mqtt.client as mqtt
 
 
@@ -52,7 +50,7 @@ class ElevatorController:
             for level in range(0, floor_count)
         }
 
-    def start(self, host = "mqtt", port = 1883):
+    def start(self, host="mqtt", port=1883):
         self.mqttc = mqtt.Client(client_id="controller")
         self.mqttc.connect(host, int(port))
         self.mqttc.on_message = self.on_message
@@ -78,7 +76,6 @@ class ElevatorController:
             "No handler specified for topic {}: '{}'".format(msg.topic, msg.payload)
         )
 
-
     def on_connect(self, client, userdata, flags, rc):
         logging.info("Connected to MQTT broker. Subscribing to topics")
 
@@ -95,7 +92,7 @@ class ElevatorController:
             logging.info(f"Subscribing to topic '{t[0]}' with callback {t[1]}")
 
             self.mqttc.subscribe(t[0])
-            if t[1] != None:
+            if t[1] is not None:
                 self.mqttc.message_callback_add(t[0], t[1])
 
     def get_elevator_id(self, msg) -> int:
@@ -198,9 +195,7 @@ class ElevatorController:
             if len(queue) > 0:
                 # send next destination
                 topic = f"elevator/{elevator_id}/nextDestination"
-                self.mqttc.publish(
-                    topic, int(queue.popleft())
-                )
+                self.mqttc.publish(topic, int(queue.popleft()))
 
     def add_elevator(self, id: int):
         self.elevators[id] = {"id": id, "queue": deque()}

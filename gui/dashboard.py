@@ -1,11 +1,15 @@
 # dashboard.py
 
-import os
-import urwid
-import json
 import asyncio
 
-from components import ElevatorUI, FloorUI, FLOOR_OFFSET, FLOOR_COUNT
+import urwid
+
+from components import (  # pylint: disable=import-error
+    FLOOR_COUNT,
+    FLOOR_OFFSET,
+    ElevatorUI,
+    FloorUI,
+)
 
 ELEVATOR_COUNT = 6
 
@@ -142,16 +146,16 @@ class DashboardUI:
         # left or right
         if floor < FLOOR_COUNT / 2:
             section = self.wait_time_values.contents[0][0]
-            idx_in_section = floor
+            idx_in_section = int(floor)
         else:
             section = self.wait_time_values.contents[1][0]
-            idx_in_section = floor - FLOOR_COUNT / 2
+            idx_in_section = int(floor - FLOOR_COUNT / 2)
 
         # access time in the section
         return section.contents[idx_in_section][0]
 
     def set_total_wait_time(self, floor: int, time: str):
-        self.get_wait_time(floor).set_text(f"Floor {floor}: {time}")
+        self.get_wait_time(int(floor)).set_text(f"Floor {floor}: {time}")
 
     def get_queue(self, id: int) -> urwid.Text:
         # skip the header and divider '-'
@@ -181,12 +185,12 @@ class DashboardUI:
 
 
 async def main(loop):
-    from async_mqtt import AsyncMQTT
+    from async_mqtt import AsyncMQTT  # pylint: disable=import-error
 
     dashboard = DashboardUI()
     dashboard.urwid_loop.start()
 
-    mqtt = AsyncMQTT(loop, dashboard)
+    AsyncMQTT(loop, dashboard)
     # workaround so that this will never end
     await loop.create_future()
 

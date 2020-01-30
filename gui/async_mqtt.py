@@ -6,6 +6,7 @@ import json
 import paho.mqtt.client as mqtt
 
 from dashboard import DashboardUI
+from components import FloorUI
 
 
 class AsyncioHelper:
@@ -75,7 +76,7 @@ class AsyncMQTT:
             f"simulation/config/passengerList/floor/+", self.on_new_passengers
         )
 
-        aioh = AsyncioHelper(self.loop, self.client)
+        AsyncioHelper(self.loop, self.client)
 
         self.client.connect("localhost", 1883)
         self.client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
