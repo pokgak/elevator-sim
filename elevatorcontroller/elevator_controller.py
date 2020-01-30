@@ -192,15 +192,24 @@ class ElevatorController:
             self.floors[int(payload["current_position"])]["up"] = False
             self.floors[int(payload["current_position"])]["down"] = False
 
-            if len(self.elevators[elevator_id]["queue"]) > 0:
+            queue = self.elevators[elevator_id]["queue"]
+            self.publish_elevator_queue(elevator_id, queue)
+
+            if len(queue) > 0:
                 # send next destination
                 topic = f"elevator/{elevator_id}/nextDestination"
                 self.mqttc.publish(
-                    topic, int(self.elevators[elevator_id]["queue"].popleft())
+                    topic, int(queue.popleft())
                 )
 
     def add_elevator(self, id: int):
         self.elevators[id] = {"id": id, "queue": deque()}
+
+    def publish_elevator_queue(self, id: int, queue):
+        topic = f"elevator/{id}/queue"
+        payload = json.dumps(list(queue))
+        self.mqttc.publish(topic, payload)
+        logging.info(f"published destination queue: {payload}")
 
     def elevator_floorSelected_cb(self, mqttc, obj, msg):
         logging.info(
@@ -222,6 +231,7 @@ class ElevatorController:
                 elevator["queue"].append(f)
 
         queue = elevator["queue"]
+        self.publish_elevator_queue(elevator_id, queue)
         logging.info(f"elevator {elevator_id} destination queue {queue}")
 
         next_dst = elevator["queue"].popleft()

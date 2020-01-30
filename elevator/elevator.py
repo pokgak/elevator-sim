@@ -186,8 +186,16 @@ class Elevator:
 
     def moveTo(self, destination: int):
         logging.info(f"driving to {destination}")
-        sleep(abs(self.floor - destination) * self.waitTime)
-        self.floor = destination
+        floor_to_go = abs(self.floor - destination)
+        while floor_to_go > 0:
+            sleep(1)
+            if self.state == DRIVING_UP:
+                self.floor += 1
+            elif self.state == DRIVING_DOWN:
+                self.floor -= 1
+            self.update_status()
+            floor_to_go -= 1
+
 
     def update_status(self, state: str = None, exit_list=None):
         """

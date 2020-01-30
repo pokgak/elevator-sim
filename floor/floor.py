@@ -164,7 +164,7 @@ class Floor:
             logging.info(
                 f"enter_list count: {using}; popping in range {range(0, using)}"
             )
-            enter_list = [self.passenger_queue.pop() for n in range(0, using)]
+            enter_list = [self.passenger_queue.popleft() for n in range(0, using)]
 
             topic = f"elevator/{self.get_elevator_id(message)}/passengerEnter"
             payload = {"floor": self.level, "enter_list": enter_list}
@@ -173,8 +173,9 @@ class Floor:
             )
             self.mqttc.publish(topic, json.dumps(payload))
 
-        # resend callButton message if there is still passengers in queue
-        if elevator["state"] == "UP" and len(self.passenger_queue) > 0:
+        # resend callButton message if there is still passengers in queue after
+        # the elevator left
+        if (elevator["state"] == "UP" or elevator["state"] == "DOWN") and len(self.passenger_queue) > 0:
             self.push_call_button(self.passenger_queue)
 
     def on_message(self, client, userdata, message):

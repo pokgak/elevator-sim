@@ -139,6 +139,7 @@ class Dashboard:
 
         # f = self.get_floor(3)
         # self.asyncio_loop.call_later(3, f.set_waiting_count, f.get_waiting_count() + 10)
+
         self.urwid_loop.set_alarm_in(UPDATE_PERIOD, self.update_screen, self.urwid_loop)
 
     def update_screen(self, loop, user_data=None):
@@ -189,7 +190,7 @@ class Dashboard:
             urwid.Text(f"Floor 4: 3/5 arrived | Floor 5: 3/5 arrived", align="center"),
             urwid.Text(f"Floor 6: 3/5 arrived | Floor 7: 3/5 arrived", align="center"),
             urwid.Text(f"Floor 8: 3/5 arrived | Floor 9: 3/5 arrived", align="center"),
-            urwid.Divider("-"),
+            urwid.Divider(" "),
             urwid.Text(f"Total: {arrived_count}/{expected}", align="center"),
         ]
         arrived = urwid.Pile(arrived_elements)
@@ -202,7 +203,7 @@ class Dashboard:
             urwid.Text(f"Floor 4: 3/5 arrived | Floor 5: 3/5 arrived", align="center"),
             urwid.Text(f"Floor 6: 3/5 arrived | Floor 7: 3/5 arrived", align="center"),
             urwid.Text(f"Floor 8: 3/5 arrived | Floor 9: 3/5 arrived", align="center"),
-            urwid.Divider("-"),
+            urwid.Divider(" "),
             urwid.Text(
                 f"Total: {total_wait_time}s | Average: {total_wait_time/arrived_count}s",
                 align="center",
@@ -210,7 +211,15 @@ class Dashboard:
         ]
         wait_time = urwid.Pile(waiting_time_elements)
 
-        statistics = urwid.Columns([arrived, wait_time])
+        queue_elements = [
+            urwid.Text("Elevator Destination Queues", align="center"),
+            urwid.Divider("-")
+        ]
+        for i in range(0, ELEVATOR_COUNT):
+            queue_elements.append(urwid.Text(f"E{i}: []"))
+        self.queue = urwid.Pile(queue_elements)
+
+        statistics = urwid.Columns([arrived, wait_time, self.queue])
         statistics = urwid.Filler(statistics)
         statistics = urwid.LineBox(statistics, title="Statistics")
 
@@ -218,6 +227,13 @@ class Dashboard:
         return urwid.Pile(
             [(len(arrived_elements) + 2, statistics), (STATUS_HEIGHT, status)]
         )
+
+    def get_queue(self, id: int) -> urwid.Text:
+        # skip the header and divider '-'
+        return self.queue.contents[2 + id][0]
+
+    def set_queue(self, id: int, queue: str):
+        self.get_queue(id).set_text(f"E{id}: {queue}")
 
     def get_elevator(self, idx: int) -> Elevator:
         return self.elevators.contents[idx][0]
@@ -295,6 +311,7 @@ class AsyncMQTT:
 
         self.client.message_callback_add(f"simulation/reset", self.on_simulation_reset)
         self.client.message_callback_add(f"elevator/+/status", self.on_elevator_status)
+        self.client.message_callback_add(f"elevator/+/queue", self.on_queue_update)
         self.client.message_callback_add(
             f"elevator/+/passengerEnter", self.on_passenger_enter
         )
@@ -321,6 +338,12 @@ class AsyncMQTT:
 
         elevator.set_statebox_text(state=state, capacity=capacity)
         elevator.set_position(position)
+
+    def on_queue_update(self, client, userdata, msg):
+        id = int(msg.topic.split("/")[1])
+        queue_list: str = str(json.loads(msg.payload))
+
+        self.dashboard.set_queue(id, queue_list)
 
     def on_new_passengers(self, client, userdata, msg):
         level = int(msg.topic.split("/")[4])
