@@ -195,25 +195,34 @@ class Dashboard:
         ]
         arrived = urwid.Pile(arrived_elements)
 
-        waiting_time_elements = [
-            urwid.Text("Waiting Time", align="center"),
-            urwid.Divider("-"),
-            urwid.Text(f"Floor 0: 3/5 arrived | Floor 1: 3/5 arrived", align="center"),
-            urwid.Text(f"Floor 2: 3/5 arrived | Floor 3: 3/5 arrived", align="center"),
-            urwid.Text(f"Floor 4: 3/5 arrived | Floor 5: 3/5 arrived", align="center"),
-            urwid.Text(f"Floor 6: 3/5 arrived | Floor 7: 3/5 arrived", align="center"),
-            urwid.Text(f"Floor 8: 3/5 arrived | Floor 9: 3/5 arrived", align="center"),
-            urwid.Divider(" "),
-            urwid.Text(
-                f"Total: {total_wait_time}s | Average: {total_wait_time/arrived_count}s",
-                align="center",
-            ),
+        wait_time_title = urwid.Text("Waiting Time", align="center")
+        wait_time_elements = [
+            urwid.Text(f"Floor {f}: 0:00:00.000000", align="center")
+            for f in range(0, FLOOR_COUNT)
         ]
-        wait_time = urwid.Pile(waiting_time_elements)
+
+        # separate the times to two sections left and right to save vertical space
+        idx_middle = int(len(wait_time_elements) / 2)
+        wait_time_left = urwid.Pile(wait_time_elements[:idx_middle])
+        wait_time_right = urwid.Pile(wait_time_elements[idx_middle:])
+        self.wait_time_values = urwid.Columns([wait_time_left, wait_time_right])
+
+        self.wait_time_total = urwid.Text(
+            f"Total: 0:00:00.000000 | Average: 0:00:00.000000", align="center",
+        )
+        wait_time = urwid.Pile(
+            [
+                wait_time_title,
+                urwid.Divider("-"),
+                self.wait_time_values,
+                urwid.Divider(" "),
+                self.wait_time_total,
+            ]
+        )
 
         queue_elements = [
             urwid.Text("Elevator Destination Queues", align="center"),
-            urwid.Divider("-")
+            urwid.Divider("-"),
         ]
         for i in range(0, ELEVATOR_COUNT):
             queue_elements.append(urwid.Text(f"E{i}: []"))
@@ -227,6 +236,21 @@ class Dashboard:
         return urwid.Pile(
             [(len(arrived_elements) + 2, statistics), (STATUS_HEIGHT, status)]
         )
+
+    def get_wait_time(self, floor: int) -> urwid.Text:
+        # left or right
+        if floor < FLOOR_COUNT / 2:
+            section = self.wait_time_values.contents[0][0]
+            idx_in_section = floor
+        else:
+            section = self.wait_time_values.contents[1][0]
+            idx_in_section = floor - FLOOR_COUNT / 2
+
+        # access time in the section
+        return section.contents[idx_in_section][0]
+
+    def set_total_wait_time(self, floor: int, time: str):
+        self.get_wait_time(floor).set_text(f"Floor {floor}: {time}")
 
     def get_queue(self, id: int) -> urwid.Text:
         # skip the header and divider '-'
@@ -310,6 +334,9 @@ class AsyncMQTT:
         self.client.on_disconnect = self.on_disconnect
 
         self.client.message_callback_add(f"simulation/reset", self.on_simulation_reset)
+        self.client.message_callback_add(
+            f"floor/+/arrived_passenger", self.on_arrived_passenger
+        )
         self.client.message_callback_add(f"elevator/+/status", self.on_elevator_status)
         self.client.message_callback_add(f"elevator/+/queue", self.on_queue_update)
         self.client.message_callback_add(
@@ -326,6 +353,12 @@ class AsyncMQTT:
 
     def on_connect(self, client, userdata, flags, rc):
         client.subscribe("#")
+
+    def on_arrived_passenger(self, client, userdata, msg):
+        floor_level = int(msg.topic.split("/")[1])
+        payload = json.loads(msg.payload)
+
+        self.dashboard.set_total_wait_time(floor_level, payload["total_wait_time"])
 
     def on_elevator_status(self, client, userdata, msg):
         id = int(msg.topic.split("/")[1])

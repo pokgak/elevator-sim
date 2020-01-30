@@ -28,7 +28,7 @@ class Floor:
         self.up_pressed = False
         self.down_pressed = False
 
-        self.client_id=f"floor{level}"
+        self.client_id = f"floor{level}"
 
     def start(self, hostname: str = "mqtt", port: int = 1883):
         self.mqttc.on_message = self.on_message
@@ -39,8 +39,7 @@ class Floor:
 
     def reset(self):
         Floor.__init__(
-            self,
-            self.orig_params["level"],
+            self, self.orig_params["level"],
         )
         time.sleep(1)
         self.start()
@@ -119,6 +118,29 @@ class Floor:
             self.mqttc.publish(f"floor/{self.level}/callButton/isPushed/down", "true")
             logging.info(f"published callButton pushed down: true")
 
+    def publish_arrived_passengers(self, level: int):
+        topic = f"floor/{level}/arrived_passenger"
+
+        count = len(self.arrived_passengers)
+        # total in miliseconds
+        total_wait_time = 0
+        for p in self.arrived_passengers:
+            start = datetime.datetime.strptime(str(p["start_time"]), "%H:%M:%S.%f")
+            end = datetime.datetime.strptime(str(p["arrived_time"]), "%H:%M:%S.%f")
+            diff = end - start
+            diff_msec = diff / datetime.timedelta(milliseconds=1)
+            total_wait_time += diff_msec
+
+        average_msec = total_wait_time / count
+
+        payload = {
+            "count": count,
+            "total_wait_time": str(datetime.timedelta(milliseconds=total_wait_time)),
+            "average_wait_time": str(datetime.timedelta(milliseconds=average_msec))
+        }
+        self.mqttc.publish(topic, json.dumps(payload))
+        logging.info(f"published arrived passengers: {payload}")
+
     def elevator_status_cb(self, client, userdata, message):
         elevator = json.loads(message.payload)
         # skip if not at current floor
@@ -156,6 +178,7 @@ class Floor:
             logging.info(
                 f"list arrived passengers: count: {len(self.arrived_passengers)}; list: {self.arrived_passengers}"
             )
+            self.publish_arrived_passengers(self.level)
 
         # reply with passenger enter
         if len(self.passenger_queue) != 0:
@@ -175,7 +198,9 @@ class Floor:
 
         # resend callButton message if there is still passengers in queue after
         # the elevator left
-        if (elevator["state"] == "UP" or elevator["state"] == "DOWN") and len(self.passenger_queue) > 0:
+        if (elevator["state"] == "UP" or elevator["state"] == "DOWN") and len(
+            self.passenger_queue
+        ) > 0:
             self.push_call_button(self.passenger_queue)
 
     def on_message(self, client, userdata, message):
