@@ -139,11 +139,6 @@ class Dashboard:
         # self.asyncio_loop.call_later(3, f.set_waiting_count, f.get_waiting_count() + 10)
 
     def build_dashboard(self):
-        # FIXME: replace by actual value
-        import random
-
-        random.seed()
-
         hline = urwid.AttrMap(urwid.SolidFill("\u2500"), "hline")
         vline = urwid.AttrMap(urwid.SolidFill("\u2502"), "vline")
 
@@ -151,7 +146,7 @@ class Dashboard:
         floors = []
         floors.append(("fixed", 1, hline))
         for i in range(FLOOR_COUNT - 1, -1, -1):
-            floors.append((floor_height, Floor(i, random.randint(0, 20))))
+            floors.append((floor_height, Floor(i)))
             floors.append(("fixed", 1, hline))
 
         self.floors = urwid.Pile(floors)
@@ -328,6 +323,10 @@ class AsyncMQTT:
 
         floor: Floor = self.dashboard.get_floor(level)
         floor.set_waiting_count(floor.get_waiting_count() - enter_count)
+
+        id = int(msg.topic.split("/")[1])
+        elevator: Elevator = self.dashboard.get_elevator(id)
+        elevator.set_statebox_text(state="ENTER")
 
     def on_simulation_reset(self, client, userdata, msg):
         # message are ignored

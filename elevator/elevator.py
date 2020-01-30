@@ -11,10 +11,10 @@ from time import sleep
 
 import paho.mqtt.client as mqtt
 
-IDLE = "idle"
-DRIVING_UP = "driving up"
-DRIVING_DOWN = "driving down"
-PASSENGER_EXIT = "passenger exiting"
+IDLE = "IDLE"
+DRIVING_UP = "UP"
+DRIVING_DOWN = "DOWN"
+PASSENGER_EXIT = "EXIT"
 
 DEFAULT_WAIT_TIME = 1
 MAX_CAPACITY = 5

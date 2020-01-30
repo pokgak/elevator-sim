@@ -14,12 +14,12 @@ class ElevatorController:
     """ Data structure for elevator variable
     {
         0: {
-            "state": "idle" | "driving up" | "driving down",
+            "state": "IDLE" | "UP" | "DOWN",
             "current_position": 0
             "queue": [1, 3]  # queue of which floor to go next
         },
         1: {
-            "state": "idle" | "driving up" | "driving down",
+            "state": "IDLE" | "UP" | "DOWN",
             "current_position": 0
             "queue": [1, 3]  # queue of which floor to go next
         }
@@ -138,7 +138,7 @@ class ElevatorController:
         idle_elevators = [
             (eid, val["current_position"])
             for eid, val in self.elevators.items()
-            if val["state"] == "idle"
+            if val["state"] == "IDLE"
         ]
 
         closest_id = None  # set to any high distance
@@ -187,7 +187,7 @@ class ElevatorController:
         self.elevators[elevator_id]["current_position"] = payload["current_position"]
         logging.info(f"elevator list updated: {self.elevators}")
 
-        if payload["state"] == "idle":
+        if payload["state"] == "IDLE":
             # FIXME: decide which direction of call button to disable
             self.floors[int(payload["current_position"])]["up"] = False
             self.floors[int(payload["current_position"])]["down"] = False

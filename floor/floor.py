@@ -125,7 +125,7 @@ class Floor:
         # skip if not at current floor
         # ignore driving up status
         if (
-            elevator["state"] == "driving up"
+            elevator["state"] == "UP"
             or elevator["current_position"] != self.level
         ):
             return
@@ -152,7 +152,7 @@ class Floor:
         }
         """
 
-        if elevator["state"] == "passenger exiting":
+        if elevator["state"] == "EXIT":
             exit_list = elevator["exit_list"]
             for p in exit_list:
                 p["arrived_time"] = datetime.datetime.now().strftime("%H:%M:%S.%f")
