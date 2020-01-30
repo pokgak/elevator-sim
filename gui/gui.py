@@ -7,7 +7,7 @@ import paho.mqtt.client as mqtt
 
 FLOOR_OFFSET = 2
 FLOOR_COUNT = 10
-ELEVATOR_COUNT = 8
+ELEVATOR_COUNT = 6
 
 STATUS_HEIGHT = FLOOR_OFFSET * FLOOR_COUNT + 3
 STATISTICS_HEIGHT = 3
@@ -114,24 +114,21 @@ class Dashboard:
             event_loop=urwid.AsyncioEventLoop(loop=self.asyncio_loop),
         )
 
-        e = self.get_elevator(0)
+        # e = self.get_elevator(0)
+        # self.asyncio_loop.call_later(1, e.set_state, "UP")
+        # self.asyncio_loop.call_later(2, e.set_state, "DOWN")
+        # self.asyncio_loop.call_later(3, e.set_state, "ENTER")
+        # self.asyncio_loop.call_later(4, e.set_state, "EXIT")
+        # self.asyncio_loop.call_later(5, e.set_state, "IDLE")
 
-        self.asyncio_loop.call_later(1, e.set_state, "UP")
-        self.asyncio_loop.call_later(2, e.set_state, "DOWN")
-        self.asyncio_loop.call_later(3, e.set_state, "ENTER")
-        self.asyncio_loop.call_later(4, e.set_state, "EXIT")
-        self.asyncio_loop.call_later(5, e.set_state, "IDLE")
+        # self.asyncio_loop.call_later(1, e.set_position, 1)
+        # self.asyncio_loop.call_later(2, e.set_position, 2)
+        # self.asyncio_loop.call_later(3, e.set_position, 3)
+        # self.asyncio_loop.call_later(4, e.set_position, 4)
+        # self.asyncio_loop.call_later(5, e.set_position, 0)
 
-        self.asyncio_loop.call_later(1, e.set_position, 1)
-        self.asyncio_loop.call_later(2, e.set_position, 2)
-        self.asyncio_loop.call_later(3, e.set_position, 3)
-        self.asyncio_loop.call_later(4, e.set_position, 4)
-        self.asyncio_loop.call_later(5, e.set_position, 0)
-
-        f = self.get_floor(3)
-        print(f)
-
-        self.asyncio_loop.call_later(3, f.set_waiting_count, f.get_waiting_count() + 10)
+        # f = self.get_floor(3)
+        # self.asyncio_loop.call_later(3, f.set_waiting_count, f.get_waiting_count() + 10)
 
     def build_dashboard(self):
         # FIXME: replace by actual value
@@ -172,26 +169,55 @@ class Dashboard:
         expected = 20
         total_wait_time = 100
 
-        s_elements = [
+        arrived_elements = [
+            urwid.Text("Arrived Count", align="center"),
+            urwid.Divider("-"),
+            urwid.Text(f"Floor 0: 3/5 arrived | Floor 1: 3/5 arrived", align="center"),
+            urwid.Text(f"Floor 2: 3/5 arrived | Floor 3: 3/5 arrived", align="center"),
+            urwid.Text(f"Floor 4: 3/5 arrived | Floor 5: 3/5 arrived", align="center"),
+            urwid.Text(f"Floor 6: 3/5 arrived | Floor 7: 3/5 arrived", align="center"),
+            urwid.Text(f"Floor 8: 3/5 arrived | Floor 9: 3/5 arrived", align="center"),
+            urwid.Divider("-"),
+            urwid.Text(f"Total: {arrived_count}/{expected}", align="center"),
+        ]
+        arrived = urwid.Pile(arrived_elements)
+
+        waiting_time_elements = [
+            urwid.Text("Waiting Time", align="center"),
+            urwid.Divider("-"),
+            urwid.Text(f"Floor 0: 3/5 arrived | Floor 1: 3/5 arrived", align="center"),
+            urwid.Text(f"Floor 2: 3/5 arrived | Floor 3: 3/5 arrived", align="center"),
+            urwid.Text(f"Floor 4: 3/5 arrived | Floor 5: 3/5 arrived", align="center"),
+            urwid.Text(f"Floor 6: 3/5 arrived | Floor 7: 3/5 arrived", align="center"),
+            urwid.Text(f"Floor 8: 3/5 arrived | Floor 9: 3/5 arrived", align="center"),
+            urwid.Divider("-"),
             urwid.Text(
-                f"Arrived: {arrived_count}/{expected} | Average waiting time: {total_wait_time / arrived_count}",
+                f"Total: {total_wait_time}s | Average: {total_wait_time/arrived_count}s",
                 align="center",
             ),
-            urwid.Divider(),
-            urwid.Text(f"Floor0: 3/5 arrived", align="center"),
         ]
+        wait_time = urwid.Pile(waiting_time_elements)
 
-        statistics = urwid.Pile(s_elements)
-        statistics = urwid.Filler(statistics, "top")
+        statistics = urwid.Columns([arrived, wait_time])
+        statistics = urwid.Filler(statistics)
         statistics = urwid.LineBox(statistics, title="Statistics")
 
-        return urwid.Pile([(len(s_elements) + 2, statistics), (STATUS_HEIGHT, status)])
+        # FIXME: replace len(arrived_elements) with more general height
+        return urwid.Pile(
+            [(len(arrived_elements) + 2, statistics), (STATUS_HEIGHT, status)]
+        )
 
     def get_elevator(self, idx: int) -> Elevator:
         return self.elevators.contents[idx][0]
 
     def get_floor(self, floor: int) -> Floor:
-        return self.floors.contents[floor][0]
+        # we access the list from behind
+        # floor 0 is the "last" element in the list, with biggest floor at idx 0
+        # multiply with 2 because between the floor there is the AttrMap element
+        # for the line that we see in the dashboard
+        # FIXME: try to combine the deco line as part of Floor
+        idx = -(floor * 2) - 2
+        return self.floors.contents[idx][0]
 
     def reset(self):
         self.frame = self.build_dashboard()
@@ -251,8 +277,10 @@ class AsyncMQTT:
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
 
-        self.client.message_callback_add(f"elevator/+/status", self.on_elevator_status)
         self.client.message_callback_add(f"simulation/reset", self.on_simulation_reset)
+        self.client.message_callback_add(f"elevator/+/status", self.on_elevator_status)
+        self.client.message_callback_add(f"elevator/+/passengerEnter", self.on_passenger_enter)
+        self.client.message_callback_add(f"simulation/config/passengerList/floor/+", self.on_new_passengers)
 
         aioh = AsyncioHelper(self.loop, self.client)
 
@@ -267,6 +295,21 @@ class AsyncMQTT:
         payload: dict = json.loads(msg.payload)
 
         self.dashboard.get_elevator(id).set_state(str(payload["state"]))
+
+    def on_new_passengers(self, client, userdata, msg):
+        level = int(msg.topic.split("/")[4])
+        passenger_list: dict = json.loads(msg.payload)
+
+        floor: Floor = self.dashboard.get_floor(level)
+        floor.set_waiting_count(floor.get_waiting_count() + len(passenger_list))
+
+    def on_passenger_enter(self, client, userdata, msg):
+        payload: dict = json.loads(msg.payload)
+        level = payload["floor"]
+        enter_count = len(payload["enter_list"])
+
+        floor: Floor = self.dashboard.get_floor(level)
+        floor.set_waiting_count(floor.get_waiting_count() - enter_count)
 
     def on_simulation_reset(self, client, userdata, msg):
         # message are ignored
