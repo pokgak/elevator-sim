@@ -1,0 +1,29 @@
+- time: 0
+  floors:
+    - start: 0
+      passengers:
+        - destination: 9
+    - start: 1
+      passengers:
+        - destination: 9
+    - start: 2
+      passengers:
+        - destination: 9
+    - start: 3
+      passengers:
+        - destination: 9
+    - start: 4
+      passengers:
+        - destination: 9
+    - start: 5
+      passengers:
+        - destination: 9
+    - start: 6
+      passengers:
+        - destination: 9
+    - start: 7
+      passengers:
+        - destination: 9
+    - start: 8
+      passengers:
+        - destination: 9
