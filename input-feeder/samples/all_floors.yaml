@@ -8,10 +8,105 @@
         - destination: 4
         - destination: 5
         - destination: 6
-        - destination: 6
+        - destination: 7
+        - destination: 8
+        - destination: 9
+    - start: 1
+      passengers:
+        - destination: 0
+        - destination: 2
+        - destination: 3
+        - destination: 4
+        - destination: 5
         - destination: 6
         - destination: 7
         - destination: 8
         - destination: 9
+    - start: 2
+      passengers:
+        - destination: 0
+        - destination: 1
+        - destination: 3
+        - destination: 4
+        - destination: 5
+        - destination: 6
+        - destination: 7
+        - destination: 8
         - destination: 9
+    - start: 3
+      passengers:
+        - destination: 0
+        - destination: 1
+        - destination: 2
+        - destination: 4
+        - destination: 5
+        - destination: 6
+        - destination: 7
+        - destination: 8
         - destination: 9
+    - start: 4
+      passengers:
+        - destination: 0
+        - destination: 1
+        - destination: 2
+        - destination: 3
+        - destination: 5
+        - destination: 6
+        - destination: 7
+        - destination: 8
+        - destination: 9
+    - start: 5
+      passengers:
+        - destination: 0
+        - destination: 1
+        - destination: 2
+        - destination: 3
+        - destination: 4
+        - destination: 6
+        - destination: 7
+        - destination: 8
+        - destination: 9
+    - start: 6
+      passengers:
+        - destination: 0
+        - destination: 1
+        - destination: 2
+        - destination: 3
+        - destination: 4
+        - destination: 5
+        - destination: 7
+        - destination: 8
+        - destination: 9
+    - start: 7
+      passengers:
+        - destination: 0
+        - destination: 1
+        - destination: 2
+        - destination: 3
+        - destination: 4
+        - destination: 5
+        - destination: 6
+        - destination: 8
+        - destination: 9
+    - start: 8
+      passengers:
+        - destination: 0
+        - destination: 1
+        - destination: 2
+        - destination: 3
+        - destination: 4
+        - destination: 5
+        - destination: 6
+        - destination: 7
+        - destination: 9
+    - start: 9
+      passengers:
+        - destination: 0
+        - destination: 1
+        - destination: 2
+        - destination: 3
+        - destination: 4
+        - destination: 5
+        - destination: 6
+        - destination: 7
+        - destination: 8
