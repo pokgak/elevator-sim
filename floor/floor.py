@@ -121,21 +121,21 @@ class Floor:
         topic = f"floor/{level}/arrived_passenger"
 
         count = len(self.arrived_passengers)
-        # total in miliseconds
+        # total in microseconds
         total_wait_time = 0
         for p in self.arrived_passengers:
             start = datetime.datetime.strptime(str(p["start_time"]), "%H:%M:%S.%f")
             end = datetime.datetime.strptime(str(p["arrived_time"]), "%H:%M:%S.%f")
             diff = end - start
-            diff_msec = diff / datetime.timedelta(milliseconds=1)
+            diff_msec = diff / datetime.timedelta(microseconds=1)
             total_wait_time += diff_msec
 
         average_msec = total_wait_time / count
 
         payload = {
             "count": count,
-            "total_wait_time": str(datetime.timedelta(milliseconds=total_wait_time)),
-            "average_wait_time": str(datetime.timedelta(milliseconds=average_msec)),
+            "wait_time": str(datetime.timedelta(microseconds=total_wait_time)),
+            "average_wait_time": str(datetime.timedelta(microseconds=average_msec)),
         }
         self.mqttc.publish(topic, json.dumps(payload))
         logging.info(f"published arrived passengers: {payload}")

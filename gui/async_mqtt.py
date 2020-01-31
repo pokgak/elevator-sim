@@ -44,7 +44,6 @@ class AsyncioHelper:
                 await asyncio.sleep(1)
             except asyncio.CancelledError:
                 break
-        print("misc_loop finished")
 
 
 class AsyncMQTT:
@@ -54,14 +53,11 @@ class AsyncMQTT:
     def __init__(self, loop, dashboard: DashboardUI):
         self.loop = loop
         self.dashboard = dashboard
+        self.client_id = "dashboard"
 
-        self.disconnected = self.loop.create_future()
-        self.got_message = None
-
-        self.client = mqtt.Client(client_id="dashboard")
+        self.client = mqtt.Client(client_id=self.client_id)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        self.client.on_disconnect = self.on_disconnect
 
         self.client.message_callback_add(f"simulation/reset", self.on_simulation_reset)
         self.client.message_callback_add(
@@ -96,8 +92,9 @@ class AsyncMQTT:
         floor_level = int(msg.topic.split("/")[1])
         payload = json.loads(msg.payload)
 
-        self.dashboard.set_total_wait_time(floor_level, payload["total_wait_time"])
+        # order is important here. Average time needs the updated passenger count
         self.dashboard.set_passenger_count(floor_level, arrived=payload["count"])
+        self.dashboard.set_wait_time(floor_level, payload["wait_time"])
 
     def on_elevator_status(self, client, userdata, msg):
         id = int(msg.topic.split("/")[1])
@@ -113,7 +110,7 @@ class AsyncMQTT:
 
     def on_queue_update(self, client, userdata, msg):
         id = int(msg.topic.split("/")[1])
-        queue_list: str = str(json.loads(msg.payload))
+        queue_list: str = str([int(dst) for dst in json.loads(msg.payload)])
 
         self.dashboard.set_queue(id, queue_list)
 
@@ -144,6 +141,3 @@ class AsyncMQTT:
     def on_message(self, client, userdata, msg):
         # print("HHLLOO")
         pass
-
-    def on_disconnect(self, client, userdata, rc):
-        self.disconnected.set_result(rc)

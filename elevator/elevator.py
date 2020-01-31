@@ -39,7 +39,7 @@ class Elevator:
         # passenger in form {"start": {startFloor}, "destination": {destFloor}}
         self.passengers: List[dict] = []
 
-        self.exit_idle_timer: threading.Timer
+        self.exit_idle_timer: threading.Timer = None
         self.client_id = f"elevator{id}"
 
     def start(self, hostname: str = "mqtt", port: int = 1883):
@@ -234,9 +234,6 @@ class Elevator:
             # update local state
             self.passengers = [p for p in self.passengers if p not in exit_list]
             self.capacity = capacity_after_exit
-            # assert (
-            #     self.capacity >= 0
-            # ), f"Elevator id {self.id} capacity less than 0: {self.capacity}"
         else:
             payload["current_capacity"] = self.capacity
 
