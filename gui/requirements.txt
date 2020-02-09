@@ -1,0 +1,3 @@
+urwid
+asyncio
+paho-mqtt
