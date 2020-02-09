@@ -1,0 +1,205 @@
+version: "3"
+services:
+  mqtt:
+    image: eclipse-mosquitto:latest
+    ports:
+      - "1883:1883"
+
+  controller:
+    build: ./controller
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/controller
+    restart: always
+    depends_on:
+      - mqtt
+    environment:
+      - mqtt_host=mqtt
+      - floor_count=10
+      - elevator_count=1
+
+  elevator0:
+    container_name: elevator0
+    build: ./elevator
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    restart: always
+    environment:
+      - capacity=10
+      - mqtt_host=mqtt
+      - elevator_id=0
+    depends_on:
+      - mqtt
+      - controller
+
+  elevator1:
+    container_name: elevator1
+    build: ./elevator
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    restart: always
+    environment:
+      - capacity=10
+      - mqtt_host=mqtt
+      - elevator_id=1
+    depends_on:
+      - mqtt
+      - controller
+
+  elevator2:
+    container_name: elevator2
+    build: ./elevator
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    restart: always
+    environment:
+      - capacity=10
+      - mqtt_host=mqtt
+      - elevator_id=2
+    depends_on:
+      - mqtt
+      - controller
+
+  elevator3:
+    container_name: elevator3
+    build: ./elevator
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    restart: always
+    environment:
+      - capacity=10
+      - mqtt_host=mqtt
+      - elevator_id=3
+    depends_on:
+      - mqtt
+      - controller
+
+  elevator4:
+    container_name: elevator4
+    build: ./elevator
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    restart: always
+    environment:
+      - capacity=10
+      - mqtt_host=mqtt
+      - elevator_id=4
+    depends_on:
+      - mqtt
+      - controller
+
+  elevator5:
+    container_name: elevator5
+    build: ./elevator
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    restart: always
+    environment:
+      - capacity=10
+      - mqtt_host=mqtt
+      - elevator_id=5
+    depends_on:
+      - mqtt
+      - controller
+
+  floor0:
+    container_name: floor0
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=0
+    depends_on:
+      - mqtt
+      - controller
+
+  floor1:
+    container_name: floor1
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=1
+    depends_on:
+      - mqtt
+      - controller
+
+  floor2:
+    container_name: floor2
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=2
+    depends_on:
+      - mqtt
+      - controller
+
+  floor3:
+    container_name: floor3
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=3
+    depends_on:
+      - mqtt
+      - controller
+
+  floor4:
+    container_name: floor4
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=4
+    depends_on:
+      - mqtt
+      - controller
+
+  floor5:
+    container_name: floor5
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=5
+    depends_on:
+      - mqtt
+      - controller
+
+  floor6:
+    container_name: floor6
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=6
+    depends_on:
+      - mqtt
+      - controller
+
+  floor7:
+    container_name: floor7
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=7
+    depends_on:
+      - mqtt
+      - controller
+
+  floor8:
+    container_name: floor8
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=8
+    depends_on:
+      - mqtt
+      - controller
+
+  floor9:
+    container_name: floor9
+    build: ./floor
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    environment:
+      - mqtt_host=mqtt
+      - floor_id=9
+    depends_on:
+      - mqtt
+      - controller
