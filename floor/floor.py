@@ -58,11 +58,10 @@ class Floor:
         # convert the payload to JSON
         waiting_list = json.loads(msg.payload)
         # convert the JSON to Passenger objects
-        self.waiting_list += [
-            Passenger(start_floor=s["start_floor"], end_floor=s["end_floor"])
-            for s in waiting_list
-        ]
+        self.waiting_list += [Passenger.from_json_dict(p) for p in waiting_list]
+        logging.debug(f"waiting list: {self.waiting_list}")
 
+        self.client.publish(f"floor/{self.floor}/waiting_count", len(self.waiting_list))
         self.push_call_button()
 
     def on_passenger_arrived(self, client, userdata, msg):
@@ -78,10 +77,8 @@ class Floor:
             down = down or (p.end_floor < self.floor)
         logging.debug(f"button pushed: up: {up}; down: {down}")
 
-        if up:
-            self.client.publish(f"floor/{self.floor}/button_pressed", "up")
-        if down:
-            self.client.publish(f"floor/{self.floor}/button_pressed", "down")
+        self.client.publish(f"floor/{self.floor}/button_pressed/up", up)
+        self.client.publish(f"floor/{self.floor}/button_pressed/down", down)
 
 
 if __name__ == "__main__":
