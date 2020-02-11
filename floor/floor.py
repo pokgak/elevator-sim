@@ -17,6 +17,7 @@ class Floor:
         self.client = mqtt.Client(f"floor{self.floor}")
 
         self.waiting_list: List[Passenger] = []
+        self.arrived_list: List[Passenger] = []
 
     def run(self, host: str = "localhost", port: int = 1883):
         # setup MQTT
@@ -66,6 +67,24 @@ class Floor:
 
     def on_passenger_arrived(self, client, userdata, msg):
         logging.info(f"New message from {msg.topic}")
+
+        # convert the payload to JSON
+        arrived_list = json.loads(msg.payload)
+
+        # log end time
+        logged_passenger: List[Passenger] = []
+        for p in arrived_list:
+            p: Passenger = Passenger.from_json_dict(p)
+            p.log_end()
+            logged_passenger.append(p)
+        self.arrived_list += logged_passenger
+        logging.debug(f"arrived list: {self.arrived_list}")
+
+        # publish logged passenger to record
+        self.client.publish(
+            f"record/floor/{self.floor}/passenger_arrived",
+            json.dumps([p.to_json() for p in logged_passenger]),
+        )
 
     def push_call_button(self):
         logging.info("pushing call button")
