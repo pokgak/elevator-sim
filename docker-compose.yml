@@ -96,7 +96,9 @@ services:
 
   floor0:
     container_name: floor0
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -107,7 +109,9 @@ services:
 
   floor1:
     container_name: floor1
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -118,7 +122,9 @@ services:
 
   floor2:
     container_name: floor2
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -129,7 +135,9 @@ services:
 
   floor3:
     container_name: floor3
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -140,7 +148,9 @@ services:
 
   floor4:
     container_name: floor4
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -151,7 +161,9 @@ services:
 
   floor5:
     container_name: floor5
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -162,7 +174,9 @@ services:
 
   floor6:
     container_name: floor6
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -173,7 +187,9 @@ services:
 
   floor7:
     container_name: floor7
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -184,7 +200,9 @@ services:
 
   floor8:
     container_name: floor8
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -195,7 +213,9 @@ services:
 
   floor9:
     container_name: floor9
-    build: ./floor
+    build:
+      context: ./
+      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
