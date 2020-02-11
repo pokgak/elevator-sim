@@ -72,7 +72,7 @@ class ElevatorUI(urwid.WidgetWrap):
     def get_position(self) -> int:
         return self.position
 
-    def set_position(self, position: int):
+    def set_floor(self, position: int):
         self.position = position
         self._w = urwid.Filler(
             urwid.LineBox(self.get_statebox(), title=str(self.id)),

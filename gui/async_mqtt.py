@@ -5,7 +5,7 @@ import socket
 import json
 import paho.mqtt.client as mqtt
 
-from dashboard import DashboardUI
+from dashboard import DashboardUI, ELEVATOR_COUNT
 from components import ElevatorUI, FloorUI, FLOOR_COUNT
 
 
@@ -92,7 +92,16 @@ class AsyncMQTT:
         floor.set_waiting_count(count)
 
     def on_elevator_actual_floor(self, client, userdata, msg):
-        pass
+        id = int(msg.topic.split("/")[1])
+        if id >= ELEVATOR_COUNT:
+            # ignore error and exit
+            return
+
+        floor = json.loads(msg.payload)
+        assert isinstance(floor, int)
+
+        elevator: ElevatorUI = self.dashboard.get_elevator(id)
+        elevator.set_floor(floor)
 
     def on_elevator_capacity(self, client, userdata, msg):
         pass
@@ -126,7 +135,7 @@ class AsyncMQTT:
     #     position = int(payload["current_position"])
 
     #     elevator.set_statebox_text(state=state, capacity=capacity)
-    #     elevator.set_position(position)
+    #     elevator.set_floor(position)
 
     # def on_queue_update(self, client, userdata, msg):
     #     id = int(msg.topic.split("/")[1])
