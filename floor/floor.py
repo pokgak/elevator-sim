@@ -74,10 +74,6 @@ class Floor:
         up: bool = False
         down: bool = False
         for p in self.waiting_list:
-            logging.debug(type(p.end_floor))
-            logging.debug(type(p))
-            logging.debug(type(up))
-            logging.debug(type(self.floor))
             up = up or (p.end_floor > self.floor)
             down = down or (p.end_floor < self.floor)
         logging.debug(f"button pushed: up: {up}; down: {down}")
