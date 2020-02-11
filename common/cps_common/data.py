@@ -49,6 +49,9 @@ class Passenger:
             and self.leave_elevator_timestamp == value.leave_elevator_timestamp
         )
 
+    def __repr__(self):
+        return self.to_json()
+
     @staticmethod
     def from_json(jsonstr: str):
         p: dict = json.loads(jsonstr)
