@@ -3,14 +3,23 @@
 import os
 import logging
 import argparse
+import threading
+import time
 
 import paho.mqtt.client as mqtt
 
 
 class Elevator:
+
     def __init__(self, id: int, start_floor: int = 0):
         self.id = id
-        self.floor = start_floor
+        self.maxCap=20 #todo as parameter
+        self.actualCap=0
+        self.nextFloor=start_floor
+        self.currentFloor=0
+
+        self._lock = threading.Lock()
+        self._newNextFloor = threading.Event()
 
         self.client = mqtt.Client(f"elevator{self.id}")
 
@@ -19,6 +28,17 @@ class Elevator:
         self.client.on_connect = self.on_connect
         self.client.on_disconnect = self.on_disconnect
         self.client.connect(host, port)
+
+        self.healthThread = threading.Thread(target=self.health)
+        self.capacityThread = threading.Thread(target=self.capacity)
+        self.floorThread = threading.Thread(target=self.floor)
+        self.moveThread = threading.Thread(target=self.move)
+        self.client.will_set(topic=f"elevator/{self.id}/status", payload="offline")
+
+        self.healthThread.start()
+        self.capacityThread.start()
+        self.floorThread.start()
+        self.moveThread.start()
 
         self.client.loop_forever()
 
@@ -29,7 +49,7 @@ class Elevator:
             (f"elevator/{self.id}/next_floor", self.on_elevator_next_floor),
             (f"simulation/elevator/{self.id}/passenger", self.on_simulation_passenger),
         ]
-
+        
         # subscribe to multiple topics in a single SUBSCRIBE command
         # QOS=1
         self.client.subscribe([(s[0], 1) for s in subscriptions])
@@ -37,14 +57,51 @@ class Elevator:
         for s in subscriptions:
             self.client.message_callback_add(s[0], s[1])
 
+    def health(self):
+        t = threading.currentThread()
+        while getattr(t, "do_run", True):
+            self.client.publish(topic=f"elevator/{self.id}/status", payload="online", qos=1)
+            time.sleep(60)     
+
+    def capacity(self):
+        t = threading.currentThread()
+        while getattr(t, "do_run", True):
+            self.client.publish(topic=f"elevator/{self.id}/capacity", payload=f'{{"max": {self.maxCap}, "actual": {self.actualCap}}}', qos=1)
+            time.sleep(1)  
+    
+    def floor(self):
+        t = threading.currentThread()
+        while getattr(t, "do_run", True):
+            self.client.publish(topic=f"elevator/{self.id}/actual_floor", payload=f"{self.currentFloor}", qos=1)
+            time.sleep(1)  
+
     def on_disconnect(self, client, userdata, rc):
         logging.info("disconnected from broker")
 
     def on_elevator_next_floor(self, client, userdata, msg):
         logging.info(f"New message from {msg.topic}")
 
+        with self._lock:
+            if self.nextFloor != msg.payload:
+                self.nextFloor = int(msg.payload)
+                self._newNextFloor.set()
+
     def on_simulation_passenger(self, client, userdata, msg):
         logging.info(f"New message from {msg.topic}")
+   
+    def move(self):
+        t = threading.currentThread()
+        while getattr(t, "do_run", True):
+            self._newNextFloor.wait()
+            while self.currentFloor != self.nextFloor:
+                time.sleep(3)
+                with self._lock:
+                    if self.currentFloor > self.nextFloor:
+                        self.currentFloor -= 1
+                    elif self.currentFloor < self.nextFloor:
+                        self.currentFloor += 1
+
+
 
 
 if __name__ == "__main__":
@@ -68,7 +125,7 @@ if __name__ == "__main__":
         help="default: ERROR\nAvailable: INFO DEBUG WARNING ERROR CRITICAL",
     )
     argp.add_argument(
-        "-id", action="store", dest="elevatorid", help="Elevator ID",
+        "-id", action="store", dest="elevatorid", default=0, help="Elevator ID",
     )
     argp.add_argument(
         "-start", action="store", dest="start", default=0, help="default: 0",
