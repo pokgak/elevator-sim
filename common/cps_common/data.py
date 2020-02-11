@@ -2,6 +2,7 @@
 
 import json
 
+import logging
 from datetime import datetime
 
 
@@ -53,9 +54,8 @@ class Passenger:
         return self.to_json()
 
     @staticmethod
-    def from_json(jsonstr: str):
-        p: dict = json.loads(jsonstr)
-
+    def from_json_dict(p: dict):
+        logging.debug(f"Passenger.from_json_dict type: {type(p)}; p: {p}")
         enter_elevator = None
         leave_elevator = None
         end = None
@@ -69,7 +69,7 @@ class Passenger:
         return Passenger(
             start_floor=p["start_floor"],
             end_floor=p["end_floor"],
-            start_timestamp=p["start_timestamp"],
+            start_timestamp=datetime.now().isoformat(),
             end_timestamp=end,
             enter_elevator=enter_elevator,
             leave_elevator=leave_elevator,
