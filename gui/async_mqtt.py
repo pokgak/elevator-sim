@@ -104,7 +104,16 @@ class AsyncMQTT:
         elevator.set_floor(floor)
 
     def on_elevator_capacity(self, client, userdata, msg):
-        pass
+        id = int(msg.topic.split("/")[1])
+        if id >= ELEVATOR_COUNT:
+            # ignore error and exit
+            return
+
+        capacity = json.loads(msg.payload)
+        assert isinstance(capacity, int)
+
+        elevator: ElevatorUI = self.dashboard.get_elevator(id)
+        elevator.set_capacity(capacity)
 
     def on_elevator_queue(self, client, userdata, msg):
         pass

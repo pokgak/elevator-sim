@@ -63,6 +63,14 @@ class ElevatorUI(urwid.WidgetWrap):
             self.capacity = capacity
         self.get_statebox().set_text(f"{self.state}|{self.capacity}")
 
+    def set_state(self, state: str):
+        self.state = state
+        self.get_statebox().set_text(f"{self.state}|{self.capacity}")
+
+    def set_capacity(self, capacity: int):
+        self.capacity = capacity
+        self.get_statebox().set_text(f"{self.state}|{self.capacity}")
+
     def get_capacity(self) -> int:
         return self.capacity
 
