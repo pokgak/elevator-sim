@@ -27,13 +27,13 @@ class Elevator:
         # setup MQTT
         self.client.on_connect = self.on_connect
         self.client.on_disconnect = self.on_disconnect
+        self.client.will_set(topic=f"elevator/{self.id}/status", payload="offline", qos=2)
         self.client.connect(host, port)
 
         self.healthThread = threading.Thread(target=self.health)
         self.capacityThread = threading.Thread(target=self.capacity)
         self.floorThread = threading.Thread(target=self.floor)
         self.moveThread = threading.Thread(target=self.move)
-        self.client.will_set(topic=f"elevator/{self.id}/status", payload="offline")
 
         self.healthThread.start()
         self.capacityThread.start()
