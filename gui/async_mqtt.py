@@ -23,7 +23,7 @@ class MQTTclient:
         self.client.on_message = self.on_message
 
         # (topic, callback)
-        callbacks = [
+        self.callbacks = [
             ("floor/+/waiting_count", self.on_floor_waiting_count),
             ("elevator/+/actual_floor", self.on_elevator_actual_floor),
             ("elevator/+/capacity", self.on_elevator_capacity),
@@ -33,7 +33,7 @@ class MQTTclient:
             ("simulation/passengers/expected", self.on_expected_passengers),
         ]
 
-        for c in callbacks:
+        for c in self.callbacks:
             self.client.message_callback_add(c[0], c[1])
 
     def run(self):
@@ -43,7 +43,7 @@ class MQTTclient:
             time.sleep(1)
 
     def on_connect(self, client, userdata, flags, rc):
-        client.subscribe("#")
+        client.subscribe([(c[0], 1) for c in self.callbacks])
 
     def on_expected_passengers(self, client, userdata, msg):
         expected = json.loads(msg.payload)

@@ -95,9 +95,9 @@ class Floor:
 
         status = msg.payload.decode("utf-8")
         elevator_id = int(msg.topic.split("/")[1])
-        logging.debug(
-            f"status: {status}; elevator floor: {self.elevators[elevator_id].floor}"
-        )
+        # logging.debug(
+        #     f"status: {status}; elevator floor: {self.elevators[elevator_id].floor}"
+        # )
 
         if (self.elevators[elevator_id].floor == self.floor) and (
             status == "open" and len(self.waiting_list) > 0
@@ -111,9 +111,11 @@ class Floor:
                 enter_list.append(self.waiting_list.pop())
 
             payload = json.dumps([p.to_json() for p in enter_list])
-            self.client.publish(f"simulation/elevator/{elevator_id}/passenger", payload)
             self.client.publish(
-                f"floor/{self.floor}/waiting_count", len(self.waiting_list)
+                f"simulation/elevator/{elevator_id}/passenger", payload, qos=2
+            )
+            self.client.publish(
+                f"floor/{self.floor}/waiting_count", len(self.waiting_list, qos=1)
             )
 
     def on_passenger_waiting(self, client, userdata, msg):
@@ -128,9 +130,11 @@ class Floor:
             Passenger(start_floor=p["start"], end_floor=p["destination"])
             for p in waiting_list
         ]
-        # logging.debug(f"waiting list: {self.waiting_list}") # FIXME
+        logging.debug(f"waiting list count: {len(self.waiting_list)}")
 
-        self.client.publish(f"floor/{self.floor}/waiting_count", len(self.waiting_list))
+        self.client.publish(
+            f"floor/{self.floor}/waiting_count", len(self.waiting_list), qos=1
+        )
         self.push_call_button()
 
     def on_passenger_arrived(self, client, userdata, msg):
@@ -148,12 +152,14 @@ class Floor:
         self.arrived_list += logged_passenger
         logging.debug(f"arrived list: {self.arrived_list}")
         self.client.publish(
-            f"simulation/floor/{self.floor}/arrived_count", len(self.arrived_list)
+            f"simulation/floor/{self.floor}/arrived_count",
+            len(self.arrived_list, qos=1),
         )
         # publish logged passenger to record
         self.client.publish(
             f"record/floor/{self.floor}/passenger_arrived",
             json.dumps([p.to_json() for p in logged_passenger]),
+            qos=2,
         )
 
     def push_call_button(self):
@@ -166,8 +172,8 @@ class Floor:
             down = down or (p.end_floor < self.floor)
         logging.debug(f"button pushed: up: {up}; down: {down}")
 
-        self.client.publish(f"floor/{self.floor}/button_pressed/up", up)
-        self.client.publish(f"floor/{self.floor}/button_pressed/down", down)
+        self.client.publish(f"floor/{self.floor}/button_pressed/up", up, qos=1)
+        self.client.publish(f"floor/{self.floor}/button_pressed/down", down, qos=1)
 
 
 if __name__ == "__main__":

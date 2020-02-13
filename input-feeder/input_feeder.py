@@ -6,18 +6,26 @@ import asyncio
 import os
 import yaml
 import json
-
-from typing import List
-
+import time
 import paho.mqtt.client as mqtt
+
+scheduled_msg = []
 
 
 def init_mqtt(host: str, port: int) -> mqtt.Client:
     print("init mqtt")
-    mqttc = mqtt.Client()
+    mqttc = mqtt.Client(client_id="input_feeder")
     mqttc.on_connect = on_connect
+    mqttc.on_publish = on_publish
     mqttc.connect(host, port)
     return mqttc
+
+
+def on_publish(client, userdata, mid):
+    for m in scheduled_msg:
+        if m.mid == mid:
+            scheduled_msg.remove(m)
+            break
 
 
 def on_connect(client, userdata, flags, rc):
@@ -41,8 +49,7 @@ async def delayed_publish(delay: int, floor: int, passengers):
     topic = get_floor_topic(floor)
 
     await asyncio.sleep(delay)
-    mqttc.publish(topic, json.dumps(passengers))
-    print(f"time: {delay} - sent {len(passengers)} passengers to floor {floor}")
+    scheduled_msg.append(mqttc.publish(topic, json.dumps(passengers), qos=2))
 
 
 async def main(samples: str):
@@ -69,7 +76,7 @@ async def main(samples: str):
             schedule.append(delayed_publish(time, start_floor, passengers))
             for p in passengers:
                 expected[str(p["destination"])] += 1
-    mqttc.publish("simulation/passengers/expected", json.dumps(expected))
+    mqttc.publish("simulation/passengers/expected", json.dumps(expected), qos=2)
     await asyncio.gather(*schedule)
     print("finished feeding inputs")
 
@@ -107,4 +114,7 @@ if __name__ == "__main__":
     samples = open(samples_file, "r").read()
     asyncio.run(main(samples))
 
+    while len(scheduled_msg) != 0:
+        mqttc.loop()
+        time.sleep(1)
     mqttc.disconnect()
