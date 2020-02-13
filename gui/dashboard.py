@@ -180,9 +180,9 @@ class DashboardUI:
     ):
         c = self.passenger_count[floor]
         if arrived is not None:
-            c["arrived"] += arrived
+            c["arrived"] = arrived
         if expected is not None:
-            c["expected"] += expected
+            c["expected"] = expected
         self.get_passenger_count(floor).set_text(
             f"Floor {floor}: {c['arrived']}/{c['expected']}"
         )

@@ -28,6 +28,7 @@ class MQTTclient:
             ("elevator/+/capacity", self.on_elevator_capacity),
             ("elevator/+/queue", self.on_elevator_queue),
             ("simulation/floor/+/passenger_arrived", self.on_passenger_arrived),
+            ("simulation/floor/+/arrived_count", self.on_arrived_count),
         ]
 
         for c in callbacks:
@@ -41,6 +42,17 @@ class MQTTclient:
 
     def on_connect(self, client, userdata, flags, rc):
         client.subscribe("#")
+
+    def on_arrived_count(self, client, userdata, msg):
+        floor = int(msg.topic.split("/")[2])
+        if floor >= FLOOR_COUNT:
+            # ignore error and exit
+            return
+
+        count = json.loads(msg.payload)
+        assert isinstance(count, int)
+
+        self.dashboard.set_passenger_count(floor, arrived=count)
 
     def on_floor_waiting_count(self, client, userdata, msg):
         floor = int(msg.topic.split("/")[1])
