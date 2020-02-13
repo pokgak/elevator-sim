@@ -51,7 +51,7 @@ class Passenger:
         )
 
     def __repr__(self):
-        return self.to_json()
+        return json.dumps(self.to_json())
 
     @staticmethod
     def from_json_dict(p: dict):
