@@ -1,9 +1,9 @@
 # dashboard.py
 
-import asyncio
 
 from datetime import datetime, timedelta
 
+import threading
 import urwid
 
 from components import (  # pylint: disable=import-error
@@ -34,18 +34,13 @@ class DashboardUI:
         ("vline", "black", "light gray", "standout"),
     ]
 
-    asyncio_loop: asyncio.AbstractEventLoop
     urwid_loop: urwid.MainLoop
 
     def __init__(self):
-        self.asyncio_loop = asyncio.get_event_loop()
-
         self.frame = self.build_dashboard()
 
         self.urwid_loop: urwid.MainLoop = urwid.MainLoop(
-            self.frame,
-            self.palette,
-            event_loop=urwid.AsyncioEventLoop(loop=self.asyncio_loop),
+            self.frame, self.palette,
         )
 
         self.urwid_loop.set_alarm_in(UPDATE_PERIOD, self.update_screen, self.urwid_loop)
@@ -265,17 +260,17 @@ class DashboardUI:
             self.get_floor(i).set_waiting_count(0)
 
 
-async def main(loop):
-    from async_mqtt import AsyncMQTT  # pylint: disable=import-error
+def main():
+    from async_mqtt import MQTTclient  # pylint: disable=import-error
 
     dashboard = DashboardUI()
-    dashboard.urwid_loop.start()
 
-    AsyncMQTT(loop, dashboard)
-    # workaround so that this will never end
-    await loop.create_future()
+    mqtt_thread = threading.Thread(target=MQTTclient(dashboard).run)
+    mqtt_thread.start()
+
+    dashboard.urwid_loop.run()
+
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main(loop))
+    main()

@@ -9,49 +9,11 @@ from dashboard import DashboardUI, ELEVATOR_COUNT
 from components import ElevatorUI, FloorUI, FLOOR_COUNT
 
 
-class AsyncioHelper:
-    def __init__(self, loop, client):
-        self.loop = loop
-        self.client = client
-        self.client.on_socket_open = self.on_socket_open
-        self.client.on_socket_close = self.on_socket_close
-        self.client.on_socket_register_write = self.on_socket_register_write
-        self.client.on_socket_unregister_write = self.on_socket_unregister_write
-
-    def on_socket_open(self, client, userdata, sock):
-        def cb():
-            client.loop_read()
-
-        self.loop.add_reader(sock, cb)
-        self.misc = self.loop.create_task(self.misc_loop())
-
-    def on_socket_close(self, client, userdata, sock):
-        self.loop.remove_reader(sock)
-        self.misc.cancel()
-
-    def on_socket_register_write(self, client, userdata, sock):
-        def cb():
-            client.loop_write()
-
-        self.loop.add_writer(sock, cb)
-
-    def on_socket_unregister_write(self, client, userdata, sock):
-        self.loop.remove_writer(sock)
-
-    async def misc_loop(self):
-        while self.client.loop_misc() == mqtt.MQTT_ERR_SUCCESS:
-            try:
-                await asyncio.sleep(1)
-            except asyncio.CancelledError:
-                break
-
-
-class AsyncMQTT:
+class MQTTclient:
 
     client: mqtt.Client
 
-    def __init__(self, loop, dashboard: DashboardUI):
-        self.loop = loop
+    def __init__(self, dashboard: DashboardUI):
         self.dashboard = dashboard
         self.client_id = "dashboard"
 
@@ -71,10 +33,9 @@ class AsyncMQTT:
         for c in callbacks:
             self.client.message_callback_add(c[0], c[1])
 
-        AsyncioHelper(self.loop, self.client)
-
+    def run(self):
         self.client.connect("localhost", 1883)
-        self.client.socket().setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2048)
+        self.client.loop_forever()
 
     def on_connect(self, client, userdata, flags, rc):
         client.subscribe("#")
