@@ -18,78 +18,81 @@ services:
 
   elevator0:
     container_name: elevator0
-    build: ./elevator
+    build:
+      context: ./
+      dockerfile: ./elevator/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=10
       - mqtt_host=mqtt
       - elevator_id=0
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
 
   elevator1:
     container_name: elevator1
-    build: ./elevator
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=10
       - mqtt_host=mqtt
       - elevator_id=1
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
 
   elevator2:
     container_name: elevator2
-    build: ./elevator
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=10
       - mqtt_host=mqtt
       - elevator_id=2
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
 
   elevator3:
     container_name: elevator3
-    build: ./elevator
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=10
       - mqtt_host=mqtt
       - elevator_id=3
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
 
   elevator4:
     container_name: elevator4
-    build: ./elevator
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=10
       - mqtt_host=mqtt
       - elevator_id=4
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
 
   elevator5:
     container_name: elevator5
-    build: ./elevator
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=10
       - mqtt_host=mqtt
       - elevator_id=5
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
@@ -103,15 +106,13 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=0
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
 
   floor1:
     container_name: floor1
-    build:
-      context: ./
-      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -122,9 +123,6 @@ services:
 
   floor2:
     container_name: floor2
-    build:
-      context: ./
-      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -135,9 +133,6 @@ services:
 
   floor3:
     container_name: floor3
-    build:
-      context: ./
-      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -148,9 +143,6 @@ services:
 
   floor4:
     container_name: floor4
-    build:
-      context: ./
-      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -161,9 +153,6 @@ services:
 
   floor5:
     container_name: floor5
-    build:
-      context: ./
-      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -174,9 +163,6 @@ services:
 
   floor6:
     container_name: floor6
-    build:
-      context: ./
-      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -187,9 +173,6 @@ services:
 
   floor7:
     container_name: floor7
-    build:
-      context: ./
-      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -200,9 +183,6 @@ services:
 
   floor8:
     container_name: floor8
-    build:
-      context: ./
-      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
@@ -213,9 +193,6 @@ services:
 
   floor9:
     container_name: floor9
-    build:
-      context: ./
-      dockerfile: ./floor/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
