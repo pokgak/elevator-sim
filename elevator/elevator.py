@@ -19,6 +19,7 @@ class Elevator:
         self.actualCap=0
         self.nextFloor=start_floor
         self.currentFloor=0
+        self.door_status="closed"
         self.passenger_list: List[Passenger]=[]
 
         self._lock = threading.Lock()
@@ -76,6 +77,7 @@ class Elevator:
         t = threading.currentThread()
         while getattr(t, "do_run", True):
             self.client.publish(topic=f"elevator/{self.id}/actual_floor", payload=f"{self.currentFloor}", qos=1)
+            self.client.publish(topic=f"elevator/{self.id}/door", payload=f"{self.door_status}", qos=1)
             time.sleep(1)  
 
     def on_disconnect(self, client, userdata, rc):
@@ -107,6 +109,7 @@ class Elevator:
             self._newNextFloor.wait()
             while self.currentFloor != self.nextFloor:
                 time.sleep(3)
+                self.door_status="closed"
                 with self._lock:
                     if self.currentFloor > self.nextFloor:
                         self.currentFloor -= 1
@@ -120,7 +123,7 @@ class Elevator:
                             p.log_leave_elevator()
                             self.actualCap -= 1
                             msg.append(p.to_json())
-
+                        self.door_status="open"
                         self.client.publish(topic=f"simulation/floor/{self.currentFloor}/passenger_arrived", payload=json.dumps(msg), qos=2)
 
 
