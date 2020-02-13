@@ -117,6 +117,7 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=1
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
@@ -127,6 +128,7 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=2
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
@@ -137,6 +139,7 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=3
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
@@ -147,6 +150,7 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=4
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
@@ -157,6 +161,7 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=5
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
@@ -167,6 +172,7 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=6
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
@@ -177,6 +183,7 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=7
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
@@ -187,6 +194,7 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=8
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
@@ -197,6 +205,7 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_id=9
+      - log_level=DEBUG
     depends_on:
       - mqtt
       - controller
