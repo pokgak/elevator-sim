@@ -5,9 +5,11 @@ import logging
 import argparse
 import threading
 import time
+from cps_common.data import Passenger
+from typing import List
+import json
 
 import paho.mqtt.client as mqtt
-
 
 class Elevator:
 
@@ -17,6 +19,7 @@ class Elevator:
         self.actualCap=0
         self.nextFloor=start_floor
         self.currentFloor=0
+        self.passenger_list: List[Passenger]=[]
 
         self._lock = threading.Lock()
         self._newNextFloor = threading.Event()
@@ -88,6 +91,15 @@ class Elevator:
 
     def on_simulation_passenger(self, client, userdata, msg):
         logging.info(f"New message from {msg.topic}")
+        
+        new_passenger = json.loads(msg.payload)
+
+        for p in new_passenger:
+            p = Passenger.from_json_dict(p)
+            p.log_enter_elevator()
+            self.passenger_list.append(p)
+            self.actualCap += 1
+
    
     def move(self):
         t = threading.currentThread()
@@ -100,6 +112,16 @@ class Elevator:
                         self.currentFloor -= 1
                     elif self.currentFloor < self.nextFloor:
                         self.currentFloor += 1
+                    
+                    if self.currentFloor == self.nextFloor:
+                        leaving = [p for p in self.passenger_list if p.end_floor == self.currentFloor]
+                        msg = []
+                        for p in leaving:
+                            p.log_leave_elevator()
+                            self.actualCap -= 1
+                            msg.append(p.to_json())
+
+                    self.client.publish(topic=f"simulation/floor/{self.currentFloor}/passenger_arrived", payload=json.dumps(msg), qos=2)
 
 
 
