@@ -13,7 +13,7 @@ from cps_common.data import Passenger
 
 class ElevatorData:
     def __init__(self):
-        self.position = 0
+        self.floor = 0
         self.door = "closed"
         self.status = "online"
         self.actual_capacity = 0
@@ -52,6 +52,7 @@ class Floor:
             (f"elevator/+/door", self.on_elevator_door),
             (f"elevator/+/capacity", self.on_elevator_capacity),
             (f"elevator/+/status", self.on_elevator_status),
+            (f"elevator/+/actual_floor", self.on_elevator_actual_floor),
         ]
 
         # subscribe to multiple topics in a single SUBSCRIBE command
@@ -64,11 +65,18 @@ class Floor:
     def on_disconnect(self, client, userdata, rc):
         logging.info("disconnected from broker")
 
+    def on_elevator_actual_floor(self, client, userdata, msg):
+        elevator_id = int(msg.topic.split("/")[1])
+        self.elevators[elevator_id].floor = int(msg.payload)
+
     def on_elevator_capacity(self, client, userdata, msg):
         # logging.info(f"New message from {msg.topic}")
 
         elevator_id = int(msg.topic.split("/")[1])
+        # logging.debug(f"payload: {str(msg.payload)}")
         capacity = json.loads(msg.payload)
+        # logging.debug(f"capacity: {capacity}")
+        # logging.debug(f"id {elevator_id}: capacity: {capacity}")
 
         self.elevators[elevator_id].max_capacity = capacity["max"]
         self.elevators[elevator_id].actual_capacity = capacity["actual"]
@@ -77,28 +85,32 @@ class Floor:
         # logging.info(f"New message from {msg.topic}")
 
         elevator_id = int(msg.topic.split("/")[1])
-        self.elevators[elevator_id].status = json.loads(msg.payload)
+        status = msg.payload.decode("utf-8")
+
+        # logging.debug(f"id {elevator_id}: status: {status}")
+        self.elevators[elevator_id].status = status
 
     def on_elevator_door(self, client, userdata, msg):
-        logging.info(f"New message from {msg.topic}")
+        # logging.info(f"New message from {msg.topic}")
 
-        status = json.loads(msg.payload)
+        status = msg.payload.decode("utf-8")
         elevator_id = int(msg.topic.split("/")[1])
+        logging.debug(f"status: {status}; elevator floor: {self.elevators[elevator_id].floor}")
 
-        if (self.elevators[elevator_id].floor == self.floor) and (status == "open"):
+        if (self.elevators[elevator_id].floor == self.floor) and (status == "open" and len(self.waiting_list) > 0):
             enter_list: List[Passenger] = []
             free = (
                 self.elevators[elevator_id].max_capacity
                 - self.elevators[elevator_id].actual_capacity
             )
-            while len(enter_list) < free:
+            while len(enter_list) < free and len(self.waiting_list) > 0:
                 enter_list.append(self.waiting_list.pop())
 
             payload = json.dumps([p.to_json() for p in enter_list])
-            self.client.publish(f"elevator/{elevator_id}/passenger", payload)
+            self.client.publish(f"simulation/elevator/{elevator_id}/passenger", payload)
 
     def on_passenger_waiting(self, client, userdata, msg):
-        logging.info(f"New message from {msg.topic}")
+        # logging.info(f"New message from {msg.topic}")
 
         # TODO: validate schema
 
@@ -106,7 +118,7 @@ class Floor:
         waiting_list = json.loads(msg.payload)
         # convert the JSON to Passenger objects
         self.waiting_list += [Passenger.from_json_dict(p) for p in waiting_list]
-        logging.debug(f"waiting list: {self.waiting_list}")
+        # logging.debug(f"waiting list: {self.waiting_list}") # FIXME
 
         self.client.publish(f"floor/{self.floor}/waiting_count", len(self.waiting_list))
         self.push_call_button()
@@ -163,11 +175,11 @@ if __name__ == "__main__":
         "-log",
         action="store",
         dest="log",
-        default="ERROR",
+        default="DEBUG",
         help="default: ERROR\nAvailable: INFO DEBUG WARNING ERROR CRITICAL",
     )
     argp.add_argument(
-        "-id", action="store", dest="floor_id", help="Floor ID",
+        "-id", action="store", default=5,dest="floor_id", help="Floor ID",
     )
 
     args = argp.parse_args()
