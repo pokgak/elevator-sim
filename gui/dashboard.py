@@ -3,6 +3,7 @@
 
 from datetime import datetime, timedelta
 
+import signal
 import threading
 import urwid
 
@@ -260,16 +261,24 @@ class DashboardUI:
             self.get_floor(i).set_waiting_count(0)
 
 
+def signal_handler(signal, frame):
+    raise urwid.ExitMainLoop()
+
+
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
+
     from async_mqtt import MQTTclient  # pylint: disable=import-error
 
     dashboard = DashboardUI()
 
-    mqtt_thread = threading.Thread(target=MQTTclient(dashboard).run)
+    mqtt_client = MQTTclient(dashboard)
+    mqtt_thread = threading.Thread(target=mqtt_client.run)
     mqtt_thread.start()
 
     dashboard.urwid_loop.run()
-
+    mqtt_client.do_run = False
+    mqtt_thread.join()
 
 
 if __name__ == "__main__":

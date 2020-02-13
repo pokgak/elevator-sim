@@ -1,7 +1,6 @@
 # async_mqtt.py
 
-import asyncio
-import socket
+import time
 import json
 import paho.mqtt.client as mqtt
 
@@ -16,6 +15,7 @@ class MQTTclient:
     def __init__(self, dashboard: DashboardUI):
         self.dashboard = dashboard
         self.client_id = "dashboard"
+        self.do_run = True
 
         self.client = mqtt.Client(client_id=self.client_id)
         self.client.on_connect = self.on_connect
@@ -34,8 +34,10 @@ class MQTTclient:
             self.client.message_callback_add(c[0], c[1])
 
     def run(self):
+        self.client.loop_start()
         self.client.connect("localhost", 1883)
-        self.client.loop_forever()
+        while self.do_run:
+            time.sleep(1)
 
     def on_connect(self, client, userdata, flags, rc):
         client.subscribe("#")
@@ -86,6 +88,7 @@ class MQTTclient:
         self.dashboard.set_queue(id, queue_list)
 
     def on_passenger_arrived(self, client, userdata, msg):
+        # TODO
         pass
 
     # def on_expected_passengers(self, client, userdata, msg):
