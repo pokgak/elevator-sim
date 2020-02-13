@@ -3,6 +3,8 @@
 
 from datetime import datetime, timedelta
 
+import argparse
+import os
 import signal
 import threading
 import urwid
@@ -163,7 +165,7 @@ class DashboardUI:
         # FIXME: replace len(arrived_elements) with more general height
         return urwid.Pile([(STATISTICS_HEIGHT, statistics), (STATUS_HEIGHT, status)])
 
-    def get_passenger_count(self, floor: int) -> urwid.Text:
+    def get_passenger_count_entry(self, floor: int) -> urwid.Text:
         # left or right
         if floor < FLOOR_COUNT / 2:
             section = self.arrived_values.contents[0][0]
@@ -175,7 +177,7 @@ class DashboardUI:
         # access time in the section
         return section.contents[idx_in_section][0]
 
-    def set_passenger_count(
+    def set_passenger_count_entry(
         self, floor: int, arrived: int = None, expected: int = None
     ):
         c = self.passenger_count[floor]
@@ -183,7 +185,7 @@ class DashboardUI:
             c["arrived"] = arrived
         if expected is not None:
             c["expected"] = expected
-        self.get_passenger_count(floor).set_text(
+        self.get_passenger_count_entry(floor).set_text(
             f"Floor {floor}: {c['arrived']}/{c['expected']}"
         )
 
@@ -265,14 +267,14 @@ def signal_handler(signal, frame):
     raise urwid.ExitMainLoop()
 
 
-def main():
+def main(host: str = "localhost"):
     signal.signal(signal.SIGINT, signal_handler)
 
     from async_mqtt import MQTTclient  # pylint: disable=import-error
 
     dashboard = DashboardUI()
 
-    mqtt_client = MQTTclient(dashboard)
+    mqtt_client = MQTTclient(dashboard=dashboard, host=host)
     mqtt_thread = threading.Thread(target=mqtt_client.run)
     mqtt_thread.start()
 
@@ -282,4 +284,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    argp = argparse.ArgumentParser(description="simulator for mqtt messages")
+    argp.add_argument(
+        "-host",
+        action="store",
+        dest="host",
+        default="localhost",
+        help="default: localhost",
+    )
+    args = argp.parse_args()
+    host = os.getenv("mqtt_host", args.host)
+
+    main(host)

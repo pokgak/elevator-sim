@@ -12,7 +12,8 @@ class MQTTclient:
 
     client: mqtt.Client
 
-    def __init__(self, dashboard: DashboardUI):
+    def __init__(self, dashboard: DashboardUI, host: str = "localhost"):
+        self.host = host
         self.dashboard = dashboard
         self.client_id = "dashboard"
         self.do_run = True
@@ -29,6 +30,7 @@ class MQTTclient:
             ("elevator/+/queue", self.on_elevator_queue),
             ("simulation/floor/+/passenger_arrived", self.on_passenger_arrived),
             ("simulation/floor/+/arrived_count", self.on_arrived_count),
+            ("simulation/passengers/expected", self.on_expected_passengers),
         ]
 
         for c in callbacks:
@@ -36,12 +38,21 @@ class MQTTclient:
 
     def run(self):
         self.client.loop_start()
-        self.client.connect("localhost", 1883)
+        self.client.connect(self.host, 1883)
         while self.do_run:
             time.sleep(1)
 
     def on_connect(self, client, userdata, flags, rc):
         client.subscribe("#")
+
+    def on_expected_passengers(self, client, userdata, msg):
+        expected = json.loads(msg.payload)
+        for floor in expected.keys():
+            floor = int(floor)
+            current = self.dashboard.passenger_count[floor]["expected"]
+            self.dashboard.set_passenger_count_entry(
+                floor, expected=current + expected[str(floor)],
+            )
 
     def on_arrived_count(self, client, userdata, msg):
         floor = int(msg.topic.split("/")[2])
@@ -52,7 +63,7 @@ class MQTTclient:
         count = json.loads(msg.payload)
         assert isinstance(count, int)
 
-        self.dashboard.set_passenger_count(floor, arrived=count)
+        self.dashboard.set_passenger_count_entry(floor, arrived=count)
 
     def on_floor_waiting_count(self, client, userdata, msg):
         floor = int(msg.topic.split("/")[1])
