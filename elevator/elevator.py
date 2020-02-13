@@ -19,7 +19,7 @@ class Elevator:
         self.actualCap=0
         self.nextFloor=start_floor
         self.currentFloor=0
-        self.door_status="closed"
+        self.door_status="open"
         self.passenger_list: List[Passenger]=[]
 
         self._lock = threading.Lock()
