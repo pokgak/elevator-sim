@@ -118,6 +118,7 @@ class Elevator:
                     
                     if self.currentFloor == self.nextFloor:
                         leaving = [p for p in self.passenger_list if p.end_floor == self.currentFloor]
+                        self.passenger_list = [p for p in self.passenger_list if p not in leaving]
                         msg = []
                         for p in leaving:
                             p.log_leave_elevator()
