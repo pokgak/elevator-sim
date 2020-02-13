@@ -6,16 +6,14 @@ import asyncio
 import os
 import yaml
 import json
-import time
+from time import sleep
 import paho.mqtt.client as mqtt
 
 scheduled_msg = []
 
 
 def init_mqtt(host: str, port: int) -> mqtt.Client:
-    print("init mqtt")
     mqttc = mqtt.Client(client_id="input_feeder")
-    mqttc.on_connect = on_connect
     mqttc.on_publish = on_publish
     mqttc.connect(host, port)
     return mqttc
@@ -26,10 +24,6 @@ def on_publish(client, userdata, mid):
         if m.mid == mid:
             scheduled_msg.remove(m)
             break
-
-
-def on_connect(client, userdata, flags, rc):
-    print("connected")
 
 
 def get_floor_topic(floor: int):
@@ -55,7 +49,6 @@ async def delayed_publish(delay: int, floor: int, passengers):
 async def main(samples: str):
     schedule = []
     samples = yaml.load(samples, Loader=yaml.BaseLoader)
-    # print(samples)
 
     FLOOR_COUNT = 10
     expected = {str(i): 0 for i in range(0, FLOOR_COUNT)}
@@ -78,7 +71,10 @@ async def main(samples: str):
                 expected[str(p["destination"])] += 1
     mqttc.publish("simulation/passengers/expected", json.dumps(expected), qos=2)
     await asyncio.gather(*schedule)
-    print("finished feeding inputs")
+
+    while len(scheduled_msg) != 0:
+        await asyncio.sleep(1)
+    print(f"finished feeding inputs: {expected}")
 
 
 if __name__ == "__main__":
@@ -91,7 +87,7 @@ if __name__ == "__main__":
         help="default: localhost",
     )
     argp.add_argument(
-        "-port", action="store", dest="port", default=1883, help="default: 1883"
+        "-port", action="store", dest="port", default=1883, help="default: publish1883"
     )
     argp.add_argument(
         "-samples",
@@ -107,14 +103,9 @@ if __name__ == "__main__":
     samples_file = os.getenv("samples_list", args.samples)
 
     mqttc = init_mqtt(host, port)
+    mqttc.loop_start()
 
-    # print("Sleeping for 3 seconds before start sending inputs")
-    # time.sleep(3)
-    print("Start!")
     samples = open(samples_file, "r").read()
     asyncio.run(main(samples))
 
-    while len(scheduled_msg) != 0:
-        mqttc.loop()
-        time.sleep(1)
     mqttc.disconnect()
