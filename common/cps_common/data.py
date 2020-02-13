@@ -20,22 +20,23 @@ class Passenger:
         self.start_floor: int = start_floor
         self.end_floor: int = end_floor
 
-        # Default values
-        self.start_timestamp: datetime = datetime.now()
-        self.end_timestamp: datetime = None
-
-        self.enter_elevator_timestamp: datetime = None
-        self.leave_elevator_timestamp: datetime = None
-
         # Overwrite default values if specified
         if start_timestamp is not None:
-            self.start_timestamp = datetime.fromisoformat(start_timestamp)
+            self.start_timestamp = start_timestamp
+        else:
+            self.start_timestamp: str = datetime.now().isoformat()
         if end_timestamp is not None:
-            self.end_timestamp = datetime.fromisoformat(end_timestamp)
+            self.end_timestamp = end_timestamp
+        else:
+            self.end_timestamp: str = None
         if enter_elevator is not None:
-            self.enter_elevator_timestamp = datetime.fromisoformat(enter_elevator)
+            self.enter_elevator_timestamp = enter_elevator
+        else:
+            self.enter_elevator_timestamp: str = None
         if leave_elevator is not None:
-            self.leave_elevator_timestamp = datetime.fromisoformat(leave_elevator)
+            self.leave_elevator_timestamp = leave_elevator
+        else:
+            self.leave_elevator_timestamp: str = None
 
     def __eq__(self, value):
         if not isinstance(value, Passenger):
@@ -59,6 +60,7 @@ class Passenger:
         enter_elevator = None
         leave_elevator = None
         end = None
+        start = None
 
         if "enter_elevator_timestamp" in p.keys():
             enter_elevator = p["enter_elevator_timestamp"]
@@ -66,10 +68,12 @@ class Passenger:
             leave_elevator = p["leave_elevator_timestamp"]
         if "end_timestamp" in p.keys():
             end = p["end_timestamp"]
+        if "start_timestamp" in p.keys():
+            start = p["start_timestamp"]
         return Passenger(
             start_floor=p["start_floor"],
             end_floor=p["end_floor"],
-            start_timestamp=datetime.now().isoformat(),
+            start_timestamp=start,
             end_timestamp=end,
             enter_elevator=enter_elevator,
             leave_elevator=leave_elevator,
@@ -79,25 +83,22 @@ class Passenger:
         result = {
             "start_floor": self.start_floor,
             "end_floor": self.end_floor,
-            "start_timestamp": self.start_timestamp.isoformat(),
         }
+        if self.start_timestamp is not None:
+            result["start_timestamp"] = self.start_timestamp
         if self.end_timestamp is not None:
-            result["end_timestamp"] = self.end_timestamp.isoformat()
+            result["end_timestamp"] = self.end_timestamp
         if self.enter_elevator_timestamp is not None:
-            result[
-                "enter_elevator_timestamp"
-            ] = self.enter_elevator_timestamp.isoformat()
+            result["enter_elevator_timestamp"] = self.enter_elevator_timestamp
         if self.leave_elevator_timestamp is not None:
-            result[
-                "leave_elevator_timestamp"
-            ] = self.leave_elevator_timestamp.isoformat()
+            result["leave_elevator_timestamp"] = self.leave_elevator_timestamp
         return result
 
     def log_end(self):
-        self.end_timestamp = datetime.now()
+        self.end_timestamp = datetime.now().isoformat()
 
     def log_enter_elevator(self):
-        self.enter_elevator_timestamp = datetime.now()
+        self.enter_elevator_timestamp = datetime.now().isoformat()
 
     def log_leave_elevator(self):
-        self.leave_elevator_timestamp = datetime.now()
+        self.leave_elevator_timestamp = datetime.now().isoformat()
