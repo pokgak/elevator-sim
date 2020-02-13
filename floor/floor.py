@@ -11,6 +11,15 @@ from typing import List
 from cps_common.data import Passenger
 
 
+class ElevatorData:
+    def __init__(self):
+        self.position = 0
+        self.door = "closed"
+        self.status = "online"
+        self.actual_capacity = 0
+        self.max_capacity = 0
+
+
 class Floor:
     def __init__(self, id: int):
         self.floor: int = id
@@ -18,6 +27,7 @@ class Floor:
 
         self.waiting_list: List[Passenger] = []
         self.arrived_list: List[Passenger] = []
+        self.elevators: List[ElevatorData] = [ElevatorData() for i in range(0, 6)]
 
     def run(self, host: str = "localhost", port: int = 1883):
         # setup MQTT
@@ -39,6 +49,9 @@ class Floor:
                 f"simulation/floor/{self.floor}/passenger_arrived",
                 self.on_passenger_arrived,
             ),
+            (f"elevator/+/door", self.on_elevator_door),
+            (f"elevator/+/capacity", self.on_elevator_capacity),
+            (f"elevator/+/status", self.on_elevator_status),
         ]
 
         # subscribe to multiple topics in a single SUBSCRIBE command
@@ -50,6 +63,39 @@ class Floor:
 
     def on_disconnect(self, client, userdata, rc):
         logging.info("disconnected from broker")
+
+    def on_elevator_capacity(self, client, userdata, msg):
+        # logging.info(f"New message from {msg.topic}")
+
+        elevator_id = int(msg.topic.split("/")[1])
+        capacity = json.loads(msg.payload)
+
+        self.elevators[elevator_id].max_capacity = capacity["max"]
+        self.elevators[elevator_id].actual_capacity = capacity["actual"]
+
+    def on_elevator_status(self, client, userdata, msg):
+        # logging.info(f"New message from {msg.topic}")
+
+        elevator_id = int(msg.topic.split("/")[1])
+        self.elevators[elevator_id].status = json.loads(msg.payload)
+
+    def on_elevator_door(self, client, userdata, msg):
+        logging.info(f"New message from {msg.topic}")
+
+        status = json.loads(msg.payload)
+        elevator_id = int(msg.topic.split("/")[1])
+
+        if (self.elevators[elevator_id].floor == self.floor) and (status == "open"):
+            enter_list: List[Passenger] = []
+            free = (
+                self.elevators[elevator_id].max_capacity
+                - self.elevators[elevator_id].actual_capacity
+            )
+            while len(enter_list) < free:
+                enter_list.append(self.waiting_list.pop())
+
+            payload = json.dumps([p.to_json() for p in enter_list])
+            self.client.publish(f"elevator/{elevator_id}/passenger", payload)
 
     def on_passenger_waiting(self, client, userdata, msg):
         logging.info(f"New message from {msg.topic}")
