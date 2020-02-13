@@ -110,10 +110,10 @@ class AsyncMQTT:
             return
 
         capacity = json.loads(msg.payload)
-        assert isinstance(capacity, int)
+        assert isinstance(capacity, dict)
 
         elevator: ElevatorUI = self.dashboard.get_elevator(id)
-        elevator.set_capacity(capacity)
+        elevator.set_capacity(capacity["actual"])
 
     def on_elevator_queue(self, client, userdata, msg):
         id = int(msg.topic.split("/")[1])
