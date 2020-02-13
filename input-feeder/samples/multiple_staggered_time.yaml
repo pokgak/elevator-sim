@@ -1,45 +1,45 @@
 - time: 0
-  floors:
+  passengers:
     - start: 0
-      passengers:
-        - destination: 9
+      destinations:
+        1: 5
 - time: 1
-  floors:
-    - start: 1
-      passengers:
-        - destination: 9
+  passengers:
+    - start: 0
+      destinations:
+        2: 5
 - time: 2
-  floors:
-    - start: 2
-      passengers:
-        - destination: 9
+  passengers:
+    - start: 0
+      destinations:
+        3: 5
 - time: 3
-  floors:
-    - start: 3
-      passengers:
-        - destination: 9
+  passengers:
+    - start: 0
+      destinations:
+        4: 5
 - time: 4
-  floors:
-    - start: 4
-      passengers:
-        - destination: 9
+  passengers:
+    - start: 0
+      destinations:
+        5: 5
 - time: 5
-  floors:
-    - start: 5
-      passengers:
-        - destination: 9
+  passengers:
+    - start: 0
+      destinations:
+        6: 5
 - time: 6
-  floors:
-    - start: 6
-      passengers:
-        - destination: 9
+  passengers:
+    - start: 0
+      destinations:
+        7: 5
 - time: 7
-  floors:
-    - start: 7
-      passengers:
-        - destination: 9
+  passengers:
+    - start: 0
+      destinations:
+        8: 5
 - time: 8
-  floors:
-    - start: 8
-      passengers:
-        - destination: 9
+  passengers:
+    - start: 0
+      destinations:
+        9: 5
