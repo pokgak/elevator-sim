@@ -91,7 +91,7 @@ class Passenger:
             result[
                 "leave_elevator_timestamp"
             ] = self.leave_elevator_timestamp.isoformat()
-        return json.dumps(result)
+        return result
 
     def log_end(self):
         self.end_timestamp = datetime.now()
