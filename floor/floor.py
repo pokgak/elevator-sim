@@ -95,9 +95,13 @@ class Floor:
 
         status = msg.payload.decode("utf-8")
         elevator_id = int(msg.topic.split("/")[1])
-        logging.debug(f"status: {status}; elevator floor: {self.elevators[elevator_id].floor}")
+        logging.debug(
+            f"status: {status}; elevator floor: {self.elevators[elevator_id].floor}"
+        )
 
-        if (self.elevators[elevator_id].floor == self.floor) and (status == "open" and len(self.waiting_list) > 0):
+        if (self.elevators[elevator_id].floor == self.floor) and (
+            status == "open" and len(self.waiting_list) > 0
+        ):
             enter_list: List[Passenger] = []
             free = (
                 self.elevators[elevator_id].max_capacity
@@ -108,6 +112,9 @@ class Floor:
 
             payload = json.dumps([p.to_json() for p in enter_list])
             self.client.publish(f"simulation/elevator/{elevator_id}/passenger", payload)
+            self.client.publish(
+                f"floor/{self.floor}/waiting_count", len(self.waiting_list)
+            )
 
     def on_passenger_waiting(self, client, userdata, msg):
         # logging.info(f"New message from {msg.topic}")
@@ -117,7 +124,10 @@ class Floor:
         # convert the payload to JSON
         waiting_list = json.loads(msg.payload)
         # convert the JSON to Passenger objects
-        self.waiting_list += [Passenger.from_json_dict(p) for p in waiting_list]
+        self.waiting_list += [
+            Passenger(start_floor=p["start"], end_floor=p["destination"])
+            for p in waiting_list
+        ]
         # logging.debug(f"waiting list: {self.waiting_list}") # FIXME
 
         self.client.publish(f"floor/{self.floor}/waiting_count", len(self.waiting_list))
@@ -179,7 +189,7 @@ if __name__ == "__main__":
         help="default: ERROR\nAvailable: INFO DEBUG WARNING ERROR CRITICAL",
     )
     argp.add_argument(
-        "-id", action="store", default=5,dest="floor_id", help="Floor ID",
+        "-id", action="store", default=5, dest="floor_id", help="Floor ID",
     )
 
     args = argp.parse_args()
