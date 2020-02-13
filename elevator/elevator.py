@@ -121,7 +121,7 @@ class Elevator:
                             self.actualCap -= 1
                             msg.append(p.to_json())
 
-                    self.client.publish(topic=f"simulation/floor/{self.currentFloor}/passenger_arrived", payload=json.dumps(msg), qos=2)
+                        self.client.publish(topic=f"simulation/floor/{self.currentFloor}/passenger_arrived", payload=json.dumps(msg), qos=2)
 
 
 
