@@ -1,0 +1,15 @@
+- time: 0
+  floors:
+    - start: 0
+      passengers:
+        - destination: 1
+        - destination: 2
+        - destination: 3
+        - destination: 4
+        - destination: 5
+        - destination: 6
+        - destination: 7
+        - destination: 8
+        - destination: 9
+
+

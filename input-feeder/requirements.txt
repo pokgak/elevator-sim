@@ -1,0 +1,4 @@
+paho-mqtt
+asyncio
+aiofiles
+pyyaml
