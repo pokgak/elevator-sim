@@ -144,7 +144,7 @@ class Floor:
         logging.debug(f"arrived list: {self.arrived_list}")
         self.client.publish(
             f"simulation/floor/{self.floor}/arrived_count",
-            len(self.arrived_list, qos=1),
+            len(self.arrived_list), qos=1,
         )
         # publish logged passenger to record
         self.client.publish(
