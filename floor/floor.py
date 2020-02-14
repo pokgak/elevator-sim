@@ -8,16 +8,7 @@ import json
 import paho.mqtt.client as mqtt
 
 from typing import List
-from cps_common.data import Passenger
-
-
-class ElevatorData:
-    def __init__(self):
-        self.floor = 0
-        self.door = "closed"
-        self.status = "online"
-        self.actual_capacity = 0
-        self.max_capacity = 0
+from cps_common.data import Passenger, ElevatorData
 
 
 class Floor:
@@ -27,7 +18,7 @@ class Floor:
 
         self.waiting_list: List[Passenger] = []
         self.arrived_list: List[Passenger] = []
-        self.elevators: List[ElevatorData] = [ElevatorData() for i in range(0, 6)]
+        self.elevators: List[ElevatorData] = [ElevatorData(id) for id in range(0, 6)]
 
     def run(self, host: str = "localhost", port: int = 1883):
         # setup MQTT
@@ -115,7 +106,7 @@ class Floor:
                 f"simulation/elevator/{elevator_id}/passenger", payload, qos=2
             )
             self.client.publish(
-                f"floor/{self.floor}/waiting_count", len(self.waiting_list, qos=1)
+                f"floor/{self.floor}/waiting_count", len(self.waiting_list), qos=1
             )
 
     def on_passenger_waiting(self, client, userdata, msg):
