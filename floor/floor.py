@@ -109,6 +109,9 @@ class Floor:
                 f"floor/{self.floor}/waiting_count", len(self.waiting_list), qos=1
             )
 
+        # re-push or disable call button if there is still passenger waiting
+        self.push_call_button()
+
     def on_passenger_waiting(self, client, userdata, msg):
         # logging.info(f"New message from {msg.topic}")
 
