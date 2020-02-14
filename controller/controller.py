@@ -87,7 +87,7 @@ class Controller:
             )
             with cv:
                 logging.debug(
-                    f"elevator {elevator.id} acquired!! for {self.on_elevator_actual_floors.__name__}"
+                    f"elevator {elevator.id} acquired!! for {self.on_elevator_actual_floor.__name__}"
                 )
                 cv.notify()
 
