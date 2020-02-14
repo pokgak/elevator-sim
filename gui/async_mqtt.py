@@ -27,7 +27,7 @@ class MQTTclient:
             ("floor/+/waiting_count", self.on_floor_waiting_count),
             ("elevator/+/actual_floor", self.on_elevator_actual_floor),
             ("elevator/+/capacity", self.on_elevator_capacity),
-            ("elevator/+/queue", self.on_elevator_queue),
+            ("simulation/elevator/+/queue", self.on_elevator_queue),
             ("simulation/floor/+/passenger_arrived", self.on_passenger_arrived),
             ("simulation/floor/+/arrived_count", self.on_arrived_count),
             ("simulation/passengers/expected", self.on_expected_passengers),
@@ -102,7 +102,7 @@ class MQTTclient:
         elevator.set_capacity(capacity["actual"])
 
     def on_elevator_queue(self, client, userdata, msg):
-        id = int(msg.topic.split("/")[1])
+        id = int(msg.topic.split("/")[2])
         if id >= ELEVATOR_COUNT:
             # ignore error and exit
             return
