@@ -81,17 +81,10 @@ class Controller:
         # logging.debug(f"elevator {id} actual floor {elevator.floor}")
 
         if elevator.queue and elevator.floor == elevator.queue[0]:
-            elevator.queue.pop()
+            elevator.queue.popleft()
             cv = self.dispatcher_locks[elevator.id]
-            logging.debug(
-                f"elevator {elevator.id} acquiring for {self.on_elevator_actual_floor.__name__}"
-            )
             with cv:
-                logging.debug(
-                    f"elevator {elevator.id} acquired!! for {self.on_elevator_actual_floor.__name__}"
-                )
                 cv.notify()
-            logging.debug("fnished notify acgtual_floor")
 
     def on_elevator_capacity(self, client, userdata, msg):
         # logging.info(f"New message from {msg.topic}")
@@ -158,15 +151,8 @@ class Controller:
         if elevator.queue and len_old != len(elevator.queue):
             logging.debug(f"elevator {elevator.id} queue: {list(elevator.queue)}")
             cv = self.dispatcher_locks[id]
-            logging.debug(
-                f"elevator {elevator.id} acquiring for {self.on_elevator_selected_floors.__name__}"
-            )
             with cv:
-                logging.debug(
-                    f"elevator {elevator.id} acquired!! for {self.on_elevator_selected_floors.__name__}"
-                )
                 cv.notify()
-            logging.debug("finised notify")
 
     def try_get_idle_elevator(self) -> ElevatorData:
         # try get elevator with empty queue
@@ -228,20 +214,22 @@ class Controller:
         elevator = self.elevators[id]
         cv = self.dispatcher_locks[id]
         while getattr(t, "do_run", True):
+            self.client.publish(
+                f"simulation/elevator/{elevator.id}/queue",
+                json.dumps(elevator.queue, cls=DequeEncoder),
+                qos=0,
+            )
+            logging.debug(f"elevator {elevator.id} queue: {elevator.queue}")
+
             while len(elevator.queue) == 0:
-                logging.debug(
-                    f"elevator {elevator.id} acquiring for {self.elevator_dispatcher.__name__}"
-                )
                 with cv:
-                    logging.debug(
-                        f"elevator {elevator.id} acquired!! for {self.elevator_dispatcher.__name__}"
-                    )
                     cv.wait()
+
             logging.debug(
                 f"elevator {elevator.id} next_floor: {int(elevator.queue[0])}"
             )
             self.client.publish(
-                f"elevator/{elevator.id}/next_floor", int(elevator.queue[0]), qos=0,
+                f"elevator/{elevator.id}/next_floor", (elevator.queue[0]), qos=0,
             )
             time.sleep(1)
 
