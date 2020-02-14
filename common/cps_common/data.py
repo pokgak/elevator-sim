@@ -4,6 +4,29 @@ import json
 
 import logging
 from datetime import datetime
+from collections import deque
+from typing import Deque
+
+
+class ElevatorData:
+    def __init__(self, id: int):
+        self.id = id
+        self.floor = 0
+        self.door = "open"
+        self.status = "online"
+        self.actual_capacity = 0
+        self.max_capacity = 0
+
+        # used by controller only
+        self.queue: Deque[int] = deque()
+
+
+class FloorData:
+    def __init__(self, id: int):
+        self.id = id
+        self.waiting_count = 0
+        self.up_pressed = False
+        self.down_pressed = False
 
 
 class Passenger:
