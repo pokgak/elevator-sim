@@ -17,6 +17,7 @@ class Elevator:
         self.id = id
         self.maxCap=20 #todo as parameter
         self.actualCap=0
+        self.destinations = set()
         self.nextFloor=start_floor
         self.currentFloor=0
         self.door_status="open"
