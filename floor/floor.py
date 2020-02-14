@@ -130,7 +130,13 @@ class Floor:
         # TODO: validate schema
 
         # convert the payload to JSON
-        waiting_list = json.loads(msg.payload)
+        try:
+            waiting_list = json.loads(msg.payload)
+        except json.JSONDecodeError:
+            logging.error("Wrong/faulty JSON message format")
+            # skip wrong message format
+            return
+
         # convert the JSON to Passenger objects
         self.waiting_list += [
             Passenger(start_floor=p["start"], end_floor=p["destination"])
