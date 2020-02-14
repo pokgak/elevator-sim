@@ -6,7 +6,9 @@ services:
       - "1883:1883"
 
   controller:
-    build: ./controller
+    build:
+      context: ./
+      dockerfile: ./controller/Dockerfile
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/controller
     restart: always
     depends_on:
@@ -14,7 +16,8 @@ services:
     environment:
       - mqtt_host=mqtt
       - floor_count=10
-      - elevator_count=1
+      - elevator_count=6
+      - log_level=DEBUG
 
   elevator0:
     container_name: elevator0
