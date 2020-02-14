@@ -3,6 +3,8 @@
 import os
 import logging
 import argparse
+import threading
+import time
 
 import json
 import paho.mqtt.client as mqtt
@@ -20,13 +22,23 @@ class Floor:
         self.arrived_list: List[Passenger] = []
         self.elevators: List[ElevatorData] = [ElevatorData(id) for id in range(0, 6)]
 
+        self.waiting_count_thread = threading.Thread(target=self.update_waiting_count)
+
     def run(self, host: str = "localhost", port: int = 1883):
         # setup MQTT
         self.client.on_connect = self.on_connect
         self.client.on_disconnect = self.on_disconnect
         self.client.connect(host, port)
 
+        self.waiting_count_thread.start()
+
         self.client.loop_forever()
+
+    def update_waiting_count(self):
+        time.sleep(1)
+        self.client.publish(
+            f"floor/{self.floor}/waiting_count", json.dumps(len(self.waiting_list))
+        )
 
     def on_connect(self, client, userdata, flags, rc):
         logging.info("connected to broker!")
@@ -147,7 +159,8 @@ class Floor:
         logging.debug(f"arrived list: {self.arrived_list}")
         self.client.publish(
             f"simulation/floor/{self.floor}/arrived_count",
-            len(self.arrived_list), qos=1,
+            len(self.arrived_list),
+            qos=1,
         )
         # publish logged passenger to record
         self.client.publish(
@@ -157,14 +170,14 @@ class Floor:
         )
 
     def push_call_button(self):
-        logging.info("pushing call button")
+        # logging.info("pushing call button")
 
         up: bool = False
         down: bool = False
         for p in self.waiting_list:
             up = up or (p.end_floor > self.floor)
             down = down or (p.end_floor < self.floor)
-        logging.debug(f"button pushed: up: {up}; down: {down}")
+        # logging.debug(f"button pushed: up: {up}; down: {down}")
 
         self.client.publish(f"floor/{self.floor}/button_pressed/up", up, qos=1)
         self.client.publish(f"floor/{self.floor}/button_pressed/down", down, qos=1)
