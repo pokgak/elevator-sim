@@ -85,10 +85,12 @@ class Elevator:
 
     def on_elevator_next_floor(self, client, userdata, msg):
         logging.info(f"New message from {msg.topic}")
+        next_floor = int(msg.payload)
 
         with self._lock:
-            if self.nextFloor != msg.payload:
-                self.nextFloor = int(msg.payload)
+            if self.nextFloor != next_floor:
+                self.nextFloor = next_floor
+                self.destinations.add(next_floor)
                 self._newNextFloor.set()
 
     def on_simulation_passenger(self, client, userdata, msg):
@@ -99,10 +101,12 @@ class Elevator:
         for p in new_passenger:
             p = Passenger.from_json_dict(p)
             p.log_enter_elevator()
+            self.destinations.add(p.end_floor)
             self.passenger_list.append(p)
             self.actualCap += 1
 
-   
+        self.client.publish(topic=f"elevator/{self.id}/selected_floors", payload=json.dumps(self.destinations, cls=SetEncoder), qos=1)
+
     def move(self):
         t = threading.currentThread()
         while getattr(t, "do_run", True):
@@ -124,10 +128,16 @@ class Elevator:
                             p.log_leave_elevator()
                             self.actualCap -= 1
                             msg.append(p.to_json())
+                        self.destinations.remove(self.currentFloor)
                         self.door_status="open"
                         self.client.publish(topic=f"simulation/floor/{self.currentFloor}/passenger_arrived", payload=json.dumps(msg), qos=2)
 
 
+class SetEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return json.JSONEncoder.default(self, obj)
 
 
 if __name__ == "__main__":
