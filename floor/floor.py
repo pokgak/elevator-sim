@@ -35,10 +35,12 @@ class Floor:
         self.client.loop_forever()
 
     def update_waiting_count(self):
-        time.sleep(1)
-        self.client.publish(
-            f"floor/{self.floor}/waiting_count", json.dumps(len(self.waiting_list))
-        )
+        t = threading.currentThread()
+        while getattr(t, "do_run", True):
+            time.sleep(1)
+            self.client.publish(
+                f"floor/{self.floor}/waiting_count", json.dumps(len(self.waiting_list))
+            )
 
     def on_connect(self, client, userdata, flags, rc):
         logging.info("connected to broker!")
