@@ -79,7 +79,7 @@ class Passenger:
 
     @staticmethod
     def from_json_dict(p: dict):
-        logging.debug(f"Passenger.from_json_dict type: {type(p)}; p: {p}")
+        # logging.debug(f"Passenger.from_json_dict type: {type(p)}; p: {p}")
         enter_elevator = None
         leave_elevator = None
         end = None
