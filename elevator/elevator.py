@@ -128,7 +128,7 @@ class Elevator:
                             p.log_leave_elevator()
                             self.actualCap -= 1
                             msg.append(p.to_json())
-                        self.destinations.remove(self.currentFloor)
+                        self.destinations.discard(self.currentFloor)
                         self.door_status="open"
                         self.client.publish(topic=f"simulation/floor/{self.currentFloor}/passenger_arrived", payload=json.dumps(msg), qos=2)
 
