@@ -54,7 +54,7 @@ class Elevator:
             (f"elevator/{self.id}/next_floor", self.on_elevator_next_floor),
             (f"simulation/elevator/{self.id}/passenger", self.on_simulation_passenger),
         ]
-        
+
         # subscribe to multiple topics in a single SUBSCRIBE command
         # QOS=1
         self.client.subscribe([(s[0], 1) for s in subscriptions])
@@ -66,20 +66,20 @@ class Elevator:
         t = threading.currentThread()
         while getattr(t, "do_run", True):
             self.client.publish(topic=f"elevator/{self.id}/status", payload="online", qos=1)
-            time.sleep(60)     
+            time.sleep(60)
 
     def capacity(self):
         t = threading.currentThread()
         while getattr(t, "do_run", True):
             self.client.publish(topic=f"elevator/{self.id}/capacity", payload=f'{{"max": {self.maxCap}, "actual": {self.actualCap}}}', qos=1)
-            time.sleep(1)  
-    
+            time.sleep(1)
+
     def floor(self):
         t = threading.currentThread()
         while getattr(t, "do_run", True):
             self.client.publish(topic=f"elevator/{self.id}/actual_floor", payload=f"{self.currentFloor}", qos=1)
             self.client.publish(topic=f"elevator/{self.id}/door", payload=f"{self.door_status}", qos=1)
-            time.sleep(1)  
+            time.sleep(1)
 
     def on_disconnect(self, client, userdata, rc):
         logging.info("disconnected from broker")
@@ -96,7 +96,7 @@ class Elevator:
 
     def on_simulation_passenger(self, client, userdata, msg):
         logging.info(f"New message from {msg.topic}")
-        
+
         new_passenger = json.loads(msg.payload)
 
         for p in new_passenger:
@@ -120,7 +120,7 @@ class Elevator:
                         self.currentFloor -= 1
                     elif self.currentFloor < self.nextFloor:
                         self.currentFloor += 1
-                    
+
                     if self.currentFloor == self.nextFloor:
                         leaving = [p for p in self.passenger_list if p.end_floor == self.currentFloor]
                         self.passenger_list = [p for p in self.passenger_list if p not in leaving]
