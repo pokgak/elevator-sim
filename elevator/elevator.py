@@ -88,11 +88,12 @@ class Elevator:
         logging.info(f"New message from {msg.topic}")
         next_floor = int(msg.payload)
 
-        with self._lock:
-            if self.nextFloor != next_floor:
-                self.nextFloor = next_floor
-                self.destinations.add(next_floor)
-                self._newNextFloor.set()
+        # this lock causes deadlock and times out and disconnect from MQTT broker
+        # with self._lock:
+        if self.nextFloor != next_floor:
+            self.nextFloor = next_floor
+            self.destinations.add(next_floor)
+            self._newNextFloor.set()
 
     def on_simulation_passenger(self, client, userdata, msg):
         logging.info(f"New message from {msg.topic}")
