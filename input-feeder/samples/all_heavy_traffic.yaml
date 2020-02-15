@@ -27,3 +27,82 @@
     - start: 9
       destinations:
         0: 10
+# workaround to pickup passenger from other floors
+- time: 0
+  passengers:
+  - start: 0
+    destinations:
+      1: 1
+      2: 1
+      3: 1
+      4: 1
+      5: 1
+      6: 1
+      7: 1
+      8: 1
+      9: 1
+- time: 5
+  passengers:
+  - start: 0
+    destinations:
+      1: 1
+      2: 1
+      3: 1
+      4: 1
+      5: 1
+      6: 1
+      7: 1
+      8: 1
+      9: 1
+- time: 10
+  passengers:
+  - start: 0
+    destinations:
+      1: 1
+      2: 1
+      3: 1
+      4: 1
+      5: 1
+      6: 1
+      7: 1
+      8: 1
+      9: 1
+- time: 15
+  passengers:
+  - start: 0
+    destinations:
+      1: 1
+      2: 1
+      3: 1
+      4: 1
+      5: 1
+      6: 1
+      7: 1
+      8: 1
+      9: 1
+- time: 20
+  passengers:
+  - start: 0
+    destinations:
+      1: 1
+      2: 1
+      3: 1
+      4: 1
+      5: 1
+      6: 1
+      7: 1
+      8: 1
+      9: 1
+- time: 25
+  passengers:
+  - start: 0
+    destinations:
+      1: 1
+      2: 1
+      3: 1
+      4: 1
+      5: 1
+      6: 1
+      7: 1
+      8: 1
+      9: 1
