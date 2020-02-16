@@ -262,7 +262,7 @@ class DashboardUI:
     def reset(self):
         for i in range(0, ELEVATOR_COUNT):
             self.get_elevator(i).set_floor(0)
-            self.get_elevator(i).set_statebox_text(state="IDLE", capacity=0)
+            self.get_elevator(i).set_statebox_text(state="OPEN", capacity=0)
         for i in range(0, FLOOR_COUNT):
             self.get_floor(i).set_waiting_count(0)
 

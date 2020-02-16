@@ -27,6 +27,7 @@ class MQTTclient:
             ("floor/+/waiting_count", self.on_floor_waiting_count),
             ("elevator/+/actual_floor", self.on_elevator_actual_floor),
             ("elevator/+/capacity", self.on_elevator_capacity),
+            ("elevator/+/door", self.on_elevator_door),
             ("simulation/elevator/+/queue", self.on_elevator_queue),
             ("simulation/floor/+/passenger_arrived", self.on_passenger_arrived),
             ("simulation/floor/+/arrived_count", self.on_arrived_count),
@@ -76,6 +77,15 @@ class MQTTclient:
 
         floor: FloorUI = self.dashboard.get_floor(floor)
         floor.set_waiting_count(count)
+
+    def on_elevator_door(self, client, userdata, msg):
+        id = int(msg.topic.split("/")[1])
+        if id >= ELEVATOR_COUNT:
+            # ignore error and exit
+            return
+
+        state = msg.payload.decode("utf-8").upper()
+        self.dashboard.get_elevator(id).set_state(state)
 
     def on_elevator_actual_floor(self, client, userdata, msg):
         id = int(msg.topic.split("/")[1])

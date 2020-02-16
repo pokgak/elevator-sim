@@ -36,7 +36,7 @@ class FloorUI(urwid.WidgetWrap):
 class ElevatorUI(urwid.WidgetWrap):
     id: int
 
-    def __init__(self, id: int, state="IDLE", position: int = 0, capacity: int = 0):
+    def __init__(self, id: int, state="OPEN", position: int = 0, capacity: int = 0):
         self.position = position
         self.id = id
         self.capacity = capacity
