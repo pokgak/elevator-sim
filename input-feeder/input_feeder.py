@@ -77,6 +77,16 @@ async def main(samples: str):
     print(f"finished feeding inputs: {expected}")
 
 
+async def main_single(start: int, dst: int):
+    passenger = {"start": start, "destination": dst}
+    await delayed_publish(0, start, [passenger])
+    mqttc.publish("simulation/passengers/expected", json.dumps({str(dst): 1}), qos=2)
+
+    while len(scheduled_msg) != 0:
+        await asyncio.sleep(1)
+    print(f"finished feeding single input: start: {start}, destination: {dst}")
+
+
 if __name__ == "__main__":
     argp = argparse.ArgumentParser(description="simulator for mqtt messages")
     argp.add_argument(
@@ -90,11 +100,14 @@ if __name__ == "__main__":
         "-port", action="store", dest="port", default=1883, help="default: publish1883"
     )
     argp.add_argument(
-        "-samples",
+        "-samples", action="store", dest="samples", help="use passenger samples",
+    )
+
+    argp.add_argument(
+        "-single",
         action="store",
-        dest="samples",
-        default="samples/simple_scenario.yaml",
-        help="default: samples/simple_scenario.yaml",
+        dest="single",
+        help="single passenger in form of '(START,END)'",
     )
     args = argp.parse_args()
 
@@ -105,7 +118,13 @@ if __name__ == "__main__":
     mqttc = init_mqtt(host, port)
     mqttc.loop_start()
 
-    samples = open(samples_file, "r").read()
-    asyncio.run(main(samples))
+    if args.single:
+        params = args.single.split(",")
+        start = int(params[0])
+        dst = int(params[1])
+        asyncio.run(main_single(start, dst))
+    else:
+        samples = open(samples_file, "r").read()
+        asyncio.run(main(samples))
 
     mqttc.disconnect()
