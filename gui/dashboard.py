@@ -119,29 +119,29 @@ class DashboardUI:
 
         # WAIT TIME
 
-        self.wait_time_widgets = [
-            urwid.Text(f"Floor {f}: 0:00:00.000000", align="center")
-            for f in range(0, FLOOR_COUNT)
-        ]
+        # self.wait_time_widgets = [
+        #     urwid.Text(f"Floor {f}: 0:00:00.000000", align="center")
+        #     for f in range(0, FLOOR_COUNT)
+        # ]
 
-        # separate the times to two sections left and right to save vertical space
-        idx_middle = int(len(self.wait_time_widgets) / 2)
-        wait_time_left = urwid.Pile(self.wait_time_widgets[:idx_middle])
-        wait_time_right = urwid.Pile(self.wait_time_widgets[idx_middle:])
-        wait_time_middle = urwid.Columns([wait_time_left, wait_time_right])
+        # # separate the times to two sections left and right to save vertical space
+        # idx_middle = int(len(self.wait_time_widgets) / 2)
+        # wait_time_left = urwid.Pile(self.wait_time_widgets[:idx_middle])
+        # wait_time_right = urwid.Pile(self.wait_time_widgets[idx_middle:])
+        # wait_time_middle = urwid.Columns([wait_time_left, wait_time_right])
 
-        # this holds the real total value
-        self.total_wait_time = None
-        # this holds the urwid widget for UI
-        self.total_wait_time_widget = urwid.Text(
-            f"Total: 0:00:00.000000 | Average: 0:00:00.000000", align="center",
-        )
-        wait_time = urwid.Pile(
-            [wait_time_middle, urwid.Divider("-"), self.total_wait_time_widget]
-        )
-        wait_time._selectable = False
-        wait_time = urwid.Padding(wait_time, right=1)
-        wait_time = urwid.LineBox(wait_time, title="Waiting Time")
+        # # this holds the real total value
+        # self.total_wait_time = None
+        # # this holds the urwid widget for UI
+        # self.total_wait_time_widget = urwid.Text(
+        #     f"Total: 0:00:00.000000 | Average: 0:00:00.000000", align="center",
+        # )
+        # wait_time = urwid.Pile(
+        #     [wait_time_middle, urwid.Divider("-"), self.total_wait_time_widget]
+        # )
+        # wait_time._selectable = False
+        # wait_time = urwid.Padding(wait_time, right=1)
+        # wait_time = urwid.LineBox(wait_time, title="Waiting Time")
 
         # QUEUE
 
@@ -158,7 +158,11 @@ class DashboardUI:
         # TOP, BOTTOM
 
         statistics = urwid.Columns(
-            [arrived, wait_time, urwid.BoxAdapter(queue_box, STATISTICS_HEIGHT)]
+            [
+                arrived,
+                # wait_time,
+                urwid.BoxAdapter(queue_box, STATISTICS_HEIGHT),
+            ]
         )
         statistics = urwid.Filler(statistics)
 
@@ -203,38 +207,38 @@ class DashboardUI:
             f"Total: {self.total_arrived}/{self.total_expected}"
         )
 
-    def get_wait_time(self, floor: int) -> urwid.Text:
-        return self.wait_time_widgets[floor]
+    # def get_wait_time(self, floor: int) -> urwid.Text:
+    #     return self.wait_time_widgets[floor]
 
-    def set_wait_time(self, floor: int, wait_time: str):
-        # update floor wait time
-        self.get_wait_time(floor).set_text(f"Floor {floor}: {wait_time}")
-        # update total wait time
-        new_time = datetime.strptime(wait_time, "%H:%M:%S.%f")
-        new_time = timedelta(
-            hours=new_time.hour,
-            minutes=new_time.minute,
-            seconds=new_time.second,
-            microseconds=new_time.microsecond,
-        )
+    # def set_wait_time(self, floor: int, wait_time: str):
+    #     # update floor wait time
+    #     self.get_wait_time(floor).set_text(f"Floor {floor}: {wait_time}")
+    #     # update total wait time
+    #     new_time = datetime.strptime(wait_time, "%H:%M:%S.%f")
+    #     new_time = timedelta(
+    #         hours=new_time.hour,
+    #         minutes=new_time.minute,
+    #         seconds=new_time.second,
+    #         microseconds=new_time.microsecond,
+    #     )
 
-        if self.total_wait_time is None:
-            self.total_wait_time = new_time
-        else:
-            self.total_wait_time = self.total_wait_time + new_time
+    #     if self.total_wait_time is None:
+    #         self.total_wait_time = new_time
+    #     else:
+    #         self.total_wait_time = self.total_wait_time + new_time
 
-        if self.total_arrived <= 0:
-            # workaround: skip if still zero
-            return
+    #     if self.total_arrived <= 0:
+    #         # workaround: skip if still zero
+    #         return
 
-        # convert to microseconds first for easier calculation
-        average = (
-            self.total_wait_time / timedelta(microseconds=1)
-        ) / self.total_arrived
-        average = timedelta(microseconds=average)
-        self.total_wait_time_widget.set_text(
-            f"Total: {str(self.total_wait_time)} | Average {str(average)}"
-        )
+    #     # convert to microseconds first for easier calculation
+    #     average = (
+    #         self.total_wait_time / timedelta(microseconds=1)
+    #     ) / self.total_arrived
+    #     average = timedelta(microseconds=average)
+    #     self.total_wait_time_widget.set_text(
+    #         f"Total: {str(self.total_wait_time)} | Average {str(average)}"
+    #     )
 
     def get_queue(self, id: int) -> urwid.Text:
         # skip the header and divider '-'
