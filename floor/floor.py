@@ -155,12 +155,11 @@ class Floor:
         logging.info(f"New message from {msg.topic}")
 
         # convert the payload to JSON
-        arrived_list = json.loads(msg.payload)
+        arrived_list = json.loads(msg.payload, object_hook=Passenger.from_json_dict)
 
         # log end time
         logged_passenger: List[Passenger] = []
         for p in arrived_list:
-            p: Passenger = Passenger.from_json_dict(p)
             p.log_end()
             logged_passenger.append(p)
         self.arrived_list += logged_passenger

@@ -98,10 +98,9 @@ class Elevator:
     def on_simulation_passenger(self, client, userdata, msg):
         logging.info(f"New message from {msg.topic}")
 
-        new_passenger = json.loads(msg.payload)
+        new_passenger = json.loads(msg.payload, object_hook=Passenger.from_json_dict)
 
         for p in new_passenger:
-            p = Passenger.from_json_dict(p)
             p.log_enter_elevator()
             self.destinations.add(p.end_floor)
             self.passenger_list.append(p)
