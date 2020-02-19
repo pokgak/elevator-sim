@@ -75,7 +75,7 @@ class Passenger:
         )
 
     def __repr__(self):
-        return json.dumps(self.to_json())
+        return json.dumps(self, cls=PassengerEncoder)
 
     @staticmethod
     def from_json_dict(p: dict):
@@ -102,7 +102,7 @@ class Passenger:
             leave_elevator=leave_elevator,
         )
 
-    def to_json(self):
+    def to_dict(self):
         result = {
             "start_floor": self.start_floor,
             "end_floor": self.end_floor,
@@ -125,3 +125,11 @@ class Passenger:
 
     def log_leave_elevator(self):
         self.leave_elevator_timestamp = datetime.now().isoformat()
+
+
+class PassengerEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Passenger):
+            return obj.to_dict()
+        # let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)

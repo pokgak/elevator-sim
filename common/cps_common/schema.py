@@ -34,9 +34,9 @@ SIMULATION_PASSENGER_ARRIVED = {
 # Example usage. Run with `python3 schema.py`.
 if __name__ == "__main__":
     import jsonschema
-    from data import Passenger
+    from data import Passenger, PassengerEncoder
 
-    test = {"elevator": 0, "list": [Passenger(1, 4).to_json()]}
+    test = {"elevator": 0, "list": [Passenger(1, 4)]}
 
     # returns nothing when valid
     jsonschema.validate(test, SIMULATION_PASSENGER_ARRIVED)
