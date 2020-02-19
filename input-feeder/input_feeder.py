@@ -9,8 +9,6 @@ import json
 from time import sleep
 import paho.mqtt.client as mqtt
 
-scheduled_msg = []
-
 
 def init_mqtt(host: str, port: int) -> mqtt.Client:
     mqttc = mqtt.Client(client_id="input_feeder")
@@ -37,7 +35,8 @@ async def delayed_publish(delay: int, floor: int, passengers):
     :param passengers: list of passengers arriving
     """
     passengers = [
-        {"start": floor, "destination": int(p["destination"])} for p in passengers
+        {"id": int(p["id"]), "start": floor, "destination": int(p["destination"])}
+        for p in passengers
     ]
 
     topic = get_floor_topic(floor)
@@ -53,18 +52,18 @@ async def main(samples: str):
     FLOOR_COUNT = 10
     expected = {str(i): 0 for i in range(0, FLOOR_COUNT)}
 
+    id = 0
     for s in samples:
         time = int(s["time"])
         for p in s["passengers"]:
             start_floor = int(p["start"])
             passengers = []
             for destination, count in p["destinations"].items():
-                passengers.extend(
-                    [
-                        {"start": start_floor, "destination": destination}
-                        for i in range(0, int(count))
-                    ]
-                )
+                for _ in range(0, int(count)):
+                    passengers.append(
+                        {"id": id, "start": start_floor, "destination": destination}
+                    )
+                    id += 1
 
             schedule.append(delayed_publish(time, start_floor, passengers))
             for p in passengers:
@@ -77,8 +76,8 @@ async def main(samples: str):
     print(f"finished feeding inputs: {expected}")
 
 
-async def main_single(start: int, dst: int):
-    passenger = {"start": start, "destination": dst}
+async def main_single(id: int, start: int, dst: int):
+    passenger = {"id": id, "start": start, "destination": dst}
     await delayed_publish(0, start, [passenger])
     mqttc.publish("simulation/passengers/expected", json.dumps({str(dst): 1}), qos=2)
 
@@ -88,6 +87,9 @@ async def main_single(start: int, dst: int):
 
 
 if __name__ == "__main__":
+    # list of all msg scheduled to be published, cannot exit program until this list is empty
+    scheduled_msg = []
+
     argp = argparse.ArgumentParser(description="simulator for mqtt messages")
     argp.add_argument(
         "-host",
@@ -122,7 +124,7 @@ if __name__ == "__main__":
         params = args.single.split(",")
         start = int(params[0])
         dst = int(params[1])
-        asyncio.run(main_single(start, dst))
+        asyncio.run(main_single(0, start, dst))
     else:
         samples = open(samples_file, "r").read()
         asyncio.run(main(samples))

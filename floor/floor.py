@@ -139,9 +139,10 @@ class Floor:
             # skip wrong message format
             return
 
+        # this is the first time we received the pasesnger object so create it first
         # convert the JSON to Passenger objects
         self.waiting_list += [
-            Passenger(start_floor=p["start"], end_floor=p["destination"])
+            Passenger(id=p["id"], start_floor=p["start"], end_floor=p["destination"])
             for p in waiting_list
         ]
         logging.debug(f"waiting list count: {len(self.waiting_list)}")

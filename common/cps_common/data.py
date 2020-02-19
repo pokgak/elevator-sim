@@ -2,7 +2,6 @@
 
 import json
 
-import logging
 from datetime import datetime
 from collections import deque
 from typing import Deque
@@ -32,6 +31,7 @@ class FloorData:
 class Passenger:
     def __init__(
         self,
+        id: int,
         start_floor: int,
         end_floor: int,
         start_timestamp: str = None,
@@ -40,6 +40,7 @@ class Passenger:
         leave_elevator: str = None,
     ):
         # Mandatory values. This must be given at initilisation
+        self.id: int = id
         self.start_floor: int = start_floor
         self.end_floor: int = end_floor
 
@@ -66,7 +67,8 @@ class Passenger:
             return NotImplemented
 
         return (
-            self.start_floor == value.start_floor
+            self.id == value.id
+            and self.start_floor == value.start_floor
             and self.end_floor == value.end_floor
             and self.start_timestamp == value.start_timestamp
             and self.end_timestamp == value.end_timestamp
@@ -93,6 +95,7 @@ class Passenger:
         if "start_timestamp" in p.keys():
             start = p["start_timestamp"]
         return Passenger(
+            id=p["id"],
             start_floor=p["start_floor"],
             end_floor=p["end_floor"],
             start_timestamp=start,
@@ -103,6 +106,7 @@ class Passenger:
 
     def to_dict(self):
         result = {
+            "id": self.id,
             "start_floor": self.start_floor,
             "end_floor": self.end_floor,
         }
