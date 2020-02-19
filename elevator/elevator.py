@@ -5,7 +5,7 @@ import logging
 import argparse
 import threading
 import time
-from cps_common.data import Passenger
+from cps_common.data import Passenger, PassengerEncoder
 from typing import List
 import json
 
@@ -129,10 +129,10 @@ class Elevator:
                         for p in leaving:
                             p.log_leave_elevator()
                             self.actualCap -= 1
-                            msg.append(p.to_json())
+                            msg.append(p)
                         self.destinations.discard(self.currentFloor)
                         self.door_status="open"
-                        self.client.publish(topic=f"simulation/floor/{self.currentFloor}/passenger_arrived", payload=json.dumps(msg), qos=2)
+                        self.client.publish(topic=f"simulation/floor/{self.currentFloor}/passenger_arrived", payload=json.dumps(msg, cls=PassengerEncoder), qos=2)
 
 
 class SetEncoder(json.JSONEncoder):

@@ -10,7 +10,7 @@ import json
 import paho.mqtt.client as mqtt
 
 from typing import List
-from cps_common.data import Passenger, ElevatorData
+from cps_common.data import Passenger, PassengerEncoder, ElevatorData
 
 
 class Floor:
@@ -115,7 +115,7 @@ class Floor:
             while len(enter_list) < free and len(self.waiting_list) > 0:
                 enter_list.append(self.waiting_list.pop())
 
-            payload = json.dumps([p.to_json() for p in enter_list])
+            payload = json.dumps(enter_list, cls=PassengerEncoder)
             self.client.publish(
                 f"simulation/elevator/{elevator_id}/passenger", payload, qos=2
             )
@@ -173,7 +173,7 @@ class Floor:
         # publish logged passenger to record
         self.client.publish(
             f"record/floor/{self.floor}/passenger_arrived",
-            json.dumps([p.to_json() for p in logged_passenger]),
+            json.dumps(logged_passenger, cls=PassengerEncoder),
             qos=2,
         )
 
