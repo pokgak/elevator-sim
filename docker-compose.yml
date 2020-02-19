@@ -1,9 +1,26 @@
 version: "3"
+volumes:
+  cps_data:
 services:
   mqtt:
     image: eclipse-mosquitto:latest
     ports:
       - "1883:1883"
+
+  recorder:
+    container_name: recorder
+    build:
+      context: ./
+      dockerfile: ./recorder/Dockerfile
+    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/recorder
+    depends_on:
+      - mqtt
+    environment:
+      - mqtt_host=mqtt
+      - log_level=DEBUG
+      - resdir=/app/recorder/data
+    volumes:
+      - cps_data:/app/recorder/data
 
   controller:
     build:
