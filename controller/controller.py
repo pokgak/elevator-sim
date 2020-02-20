@@ -179,7 +179,12 @@ class Controller:
         return self.get_nearest_elevator(source_floor)
 
     def get_called_floor(self) -> int:
+        combined_queue = []
+        for e in self.elevators:
+            combined_queue += e.queue
         for f in self.floors:
+            if f.id in combined_queue:
+                continue
             if f.up_pressed or f.down_pressed:
                 return f.id
         return None
@@ -192,6 +197,7 @@ class Controller:
             source_floor = self.get_called_floor()
             if source_floor is None:
                 continue
+
             elevator = self.select_elevator(source_floor)
             assert isinstance(elevator, ElevatorData)
             if (source_floor not in elevator.queue) and (
