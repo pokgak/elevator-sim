@@ -238,7 +238,7 @@ class Controller:
 
         pressed_floors = []
         for f in self.floors:
-            if f.id in combined_queue or f.waiting_count == 0:
+            if (f.id in combined_queue or f.waiting_count == 0) and f.waiting_count <= 20:
                 continue
             if f.up_pressed or f.down_pressed:
                 pressed_floors.append({"id": f.id, "count": f.waiting_count})
