@@ -1,0 +1,13 @@
+- time: 0
+  passengers:
+    - start: 4
+      destinations:
+        0: 1
+- time: 2
+  passengers:
+    - start: 8
+      destinations:
+        0: 5
+    - start: 9
+      destinations:
+        0: 10
