@@ -166,6 +166,13 @@ class Controller:
                 return e
         return None
 
+    def try_get_empty_elevator(self):
+        for e in self.elevators:
+            if e.actual_capacity == 0:
+                e.queue.clear()
+                return e
+        return None
+
     def get_nearest_elevator(self, source_floor: int) -> ElevatorData:
         # try get elevator with empty queue
         distance = [100 for e in range(0, 10)]  # start with high distance
@@ -179,6 +186,10 @@ class Controller:
 
     def select_elevator(self, source_floor: int) -> ElevatorData:
         elevator = self.try_get_idle_elevator()
+        if elevator is not None:
+            return elevator
+
+        elevator = self.try_get_empty_elevator()
         if elevator is not None:
             return elevator
 
