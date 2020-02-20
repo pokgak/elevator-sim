@@ -81,6 +81,11 @@ class Controller:
         # logging.debug(f"elevator {id} actual floor {elevator.floor}")
 
         if elevator.queue and elevator.floor == elevator.queue[0]:
+            # FIXME: determine direction to reset, NOT BOTH
+            floor = self.floors[elevator.floor]
+            floor.up_pressed = False
+            floor.down_pressed = False
+
             elevator.queue.popleft()
             cv = self.dispatcher_locks[elevator.id]
             with cv:
@@ -135,7 +140,7 @@ class Controller:
         for f in selected:
             f = int(f)
             if f not in elevator.queue:
-                logging.debug(f"elevator {id} new selected floor {f}")
+                # logging.debug(f"elevator {id} new selected floor {f}")
                 # TODO: should double floor be allowed?
                 # TODO: append based on direction of elevator
                 elevator.queue.append(f)
@@ -168,6 +173,8 @@ class Controller:
         for i, e in enumerate(self.elevators):
             # TODO: direction of elevator important?
             distance[i] = abs(e.floor - source_floor)
+
+        # TODO: only return if elevator not full (max_cap < 20)
         return self.elevators[distance.index(min(distance))]
 
     def select_elevator(self, source_floor: int) -> ElevatorData:
@@ -182,11 +189,18 @@ class Controller:
         combined_queue = []
         for e in self.elevators:
             combined_queue += e.queue
+
+        pressed_floors = []
         for f in self.floors:
-            if f.id in combined_queue:
+            if f.id in combined_queue or f.waiting_count == 0:
                 continue
             if f.up_pressed or f.down_pressed:
-                return f.id
+                pressed_floors.append({"id": f.id, "count": f.waiting_count})
+        max_count = max(pressed_floors, default=None, key=compare_waiting_count)
+        if max_count is not None:
+            # logging.debug(f"max_count floor: {max_count}")
+            return max_count["id"]
+
         return None
 
     def scheduler(self):
@@ -200,8 +214,10 @@ class Controller:
 
             elevator = self.select_elevator(source_floor)
             assert isinstance(elevator, ElevatorData)
-            if (source_floor not in elevator.queue) and (
-                source_floor != elevator.floor
+            if (
+                (source_floor not in elevator.queue)
+                and (source_floor != elevator.floor)
+                and (self.floors[source_floor].waiting_count > 0)
             ):
                 elevator.queue.append(source_floor)
                 cv = self.dispatcher_locks[elevator.id]
@@ -230,18 +246,16 @@ class Controller:
             while len(elevator.queue) == 0:
                 with cv:
                     cv.wait()
-
-            logging.debug(
-                f"elevator {elevator.id} next_floor: {int(elevator.queue[0])}"
-            )
+            next_floor: int = int(elevator.queue[0])
+            logging.debug(f"elevator {elevator.id} next_floor: {next_floor}")
             self.client.publish(
-                f"elevator/{elevator.id}/next_floor", (elevator.queue[0]), qos=0,
+                f"elevator/{elevator.id}/next_floor", next_floor, qos=0,
             )
 
             # reset button pressed
-            if elevator.queue[0] > elevator.floor:
+            if next_floor > elevator.floor:
                 self.floors[elevator.floor].up_pressed = False
-            elif elevator.queue[0] < elevator.floor:
+            elif next_floor < elevator.floor:
                 self.floors[elevator.floor].down_pressed = False
             else:
                 self.floors[elevator.floor].down_pressed = False
@@ -255,6 +269,10 @@ class DequeEncoder(json.JSONEncoder):
         if isinstance(obj, deque):
             return list(obj)
         return json.JSONEncoder.default(self, obj)
+
+
+def compare_waiting_count(f):
+    return f["count"]
 
 
 if __name__ == "__main__":
