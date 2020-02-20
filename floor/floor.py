@@ -5,7 +5,7 @@ import logging
 import argparse
 import threading
 import time
-
+import random
 import json
 import paho.mqtt.client as mqtt
 
@@ -145,6 +145,7 @@ class Floor:
             Passenger(id=p["id"], start_floor=p["start"], end_floor=p["destination"])
             for p in waiting_list
         ]
+        random.shuffle(self.waiting_list)
         logging.debug(f"waiting list count: {len(self.waiting_list)}")
 
         self.client.publish(
