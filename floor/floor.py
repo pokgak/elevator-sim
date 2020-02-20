@@ -23,6 +23,9 @@ class Floor:
         self.elevators: List[ElevatorData] = [ElevatorData(id) for id in range(0, 6)]
 
         self.waiting_count_thread = threading.Thread(target=self.update_waiting_count)
+        self.push_call_button_thread = threading.Thread(
+            target=self.push_call_button_wrapper
+        )
 
     def run(self, host: str = "localhost", port: int = 1883):
         # setup MQTT
@@ -31,6 +34,7 @@ class Floor:
         self.client.connect(host, port)
 
         self.waiting_count_thread.start()
+        self.push_call_button_thread.start()
 
         self.client.loop_forever()
 
@@ -177,6 +181,12 @@ class Floor:
             json.dumps(logged_passenger, cls=PassengerEncoder),
             qos=2,
         )
+
+    def push_call_button_wrapper(self):
+        t = threading.currentThread()
+        while getattr(t, "do_run", True):
+            time.sleep(1)
+            self.push_call_button()
 
     def push_call_button(self):
         # logging.info("pushing call button")
