@@ -231,6 +231,16 @@ class Controller:
             self.client.publish(
                 f"elevator/{elevator.id}/next_floor", (elevator.queue[0]), qos=0,
             )
+
+            # reset button pressed
+            if elevator.queue[0] > elevator.floor:
+                self.floors[elevator.floor].up_pressed = False
+            elif elevator.queue[0] < elevator.floor:
+                self.floors[elevator.floor].down_pressed = False
+            else:
+                self.floors[elevator.floor].down_pressed = False
+                self.floors[elevator.floor].up_pressed = False
+
             time.sleep(1)
 
 

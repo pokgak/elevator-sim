@@ -123,8 +123,8 @@ class Floor:
                 f"floor/{self.floor}/waiting_count", len(self.waiting_list), qos=1
             )
 
-        # re-push or disable call button if there is still passenger waiting
-        self.push_call_button()
+            # re-push or disable call button if there is still passenger waiting
+            self.push_call_button()
 
     def on_passenger_waiting(self, client, userdata, msg):
         # logging.info(f"New message from {msg.topic}")
@@ -187,8 +187,10 @@ class Floor:
             down = down or (p.end_floor < self.floor)
         # logging.debug(f"button pushed: up: {up}; down: {down}")
 
-        self.client.publish(f"floor/{self.floor}/button_pressed/up", up, qos=1)
-        self.client.publish(f"floor/{self.floor}/button_pressed/down", down, qos=1)
+        if up:
+            self.client.publish(f"floor/{self.floor}/button_pressed/up", up, qos=1)
+        if down:
+            self.client.publish(f"floor/{self.floor}/button_pressed/down", down, qos=1)
 
 
 if __name__ == "__main__":
