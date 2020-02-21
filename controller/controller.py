@@ -8,7 +8,7 @@ import json
 import time
 
 import paho.mqtt.client as mqtt
-from typing import List
+from typing import List, Deque
 from collections import deque
 from cps_common.data import ElevatorData, FloorData
 
@@ -135,10 +135,11 @@ class Controller:
         for f in selected:
             f = int(f)
             if f not in elevator.queue:
-                logging.debug(f"elevator {id} new selected floor {f}")
-                # TODO: should double floor be allowed?
-                # TODO: append based on direction of elevator
+                # logging.debug(f"elevator {id} new selected floor {f}")
                 elevator.queue.append(f)
+        elevator.queue = self.sort_queue(elevator.floor, elevator.queue)
+        logging.debug(f"sorted queue: {elevator.queue}")
+
         self.client.publish(
             f"simulation/elevator/{elevator.id}/queue",
             json.dumps(elevator.queue, cls=DequeEncoder),
@@ -153,6 +154,38 @@ class Controller:
             cv = self.dispatcher_locks[id]
             with cv:
                 cv.notify()
+
+    def sort_queue(self, current_floor: int, q: Deque[int]) -> Deque[int]:
+        # to sort: [8, 1, 6, 7, 2, 3]
+        # current floor: 5
+        # upper: [6, 7, 8]
+        # lower: [3, 2, 1]
+        # if direction UP: [6, 7, 8, 3, 2, 1]
+        # if direction DOWN: [3, 2, 1, 6, 7, 8]
+
+        # check queue empty
+        if not q:
+            logging.warning("queue to sort is empty")
+            return q
+
+        # separate the queue to upper and lower floor compared to the current floor
+        upper = sorted([f for f in q if f > current_floor])
+        # reverse lower because when at higher floor we want to go down
+        # e.g. current: 9; queue: [8, 7, 6] not [6, 7, 8]
+        lower = sorted([f for f in q if f < current_floor]).reverse()
+
+        # if at lowest floor
+        if lower is None:
+            return deque(upper)
+        # or at highest floor
+        if upper is None:
+            return deque(lower)
+        # else we need to combine both upper and lower
+        direction = "UP"  # FIXME: always up for now
+        if direction == "UP":
+            return deque(upper + lower)
+        else:
+            return deque(lower + upper)
 
     def try_get_idle_elevator(self) -> ElevatorData:
         # try get elevator with empty queue
