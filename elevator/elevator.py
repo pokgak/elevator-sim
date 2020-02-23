@@ -106,7 +106,7 @@ class Elevator:
             self.passenger_list.append(p)
             self.actualCap += 1
 
-        self.client.publish(topic=f"elevator/{self.id}/selected_floors", payload=json.dumps(self.destinations, cls=SetEncoder), qos=1)
+        self.client.publish(topic=f"elevator/{self.id}/selected_floors", payload=json.dumps(set([p.end_floor for p in self.passenger_list]), cls=SetEncoder), qos=1)
 
     def move(self):
         t = threading.currentThread()
