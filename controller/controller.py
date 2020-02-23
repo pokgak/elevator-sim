@@ -108,9 +108,6 @@ class Controller:
                 floor.down_pressed = False
 
             elevator.queue.popleft()
-            cv = self.dispatcher_locks[elevator.id]
-            with cv:
-                cv.notify()
 
     def on_elevator_capacity(self, client, userdata, msg):
         # logging.info(f"New message from {msg.topic}")
@@ -140,7 +137,7 @@ class Controller:
         # get last section of the topic: "up" or "down"
         direction = msg.topic.split("/")[-1]
         value = bool(msg.payload)
-        logging.debug(f"floor {id} button direction: {direction}; value: {value}")
+        # logging.debug(f"floor {id} button direction: {direction}; value: {value}")
 
         if direction == "up":
             floor.up_pressed = value
@@ -169,7 +166,7 @@ class Controller:
         elevator.queue = self.sort_queue(
             elevator.direction, elevator.floor, elevator.queue
         )
-        logging.debug(f"sorted queue: {elevator.queue}")
+        # logging.debug(f"sorted queue: {elevator.queue}")
 
         self.client.publish(
             f"simulation/elevator/{elevator.id}/queue",
@@ -180,9 +177,6 @@ class Controller:
         cv = self.dispatcher_locks[id]
         with cv:
             cv.notify()
-
-        # notify scheduler thread to update schedule
-        # self._callButtonEvent.set()
 
     def sort_queue(
         self, direction: str, current_floor: int, q: Deque[int]
@@ -213,7 +207,6 @@ class Controller:
         if not upper:
             return deque(lower)
         # else we need to combine both upper and lower
-        direction = "UP"  # FIXME: always up for now
         if direction == "UP":
             return deque(upper + lower)
         else:
@@ -261,17 +254,11 @@ class Controller:
         for e in self.elevators:
             combined_queue += e.queue
 
-        pressed_floors = []
         for f in self.floors:
             if f.id in combined_queue:
                 continue
             if f.up_pressed or f.down_pressed:
-                pressed_floors.append({"id": f.id, "count": f.waiting_count})
-        max_count = max(pressed_floors, default=None, key=compare_waiting_count)
-        if max_count is not None:
-            # logging.debug(f"max_count floor: {max_count}")
-            return max_count["id"]
-
+                return f.id
         return None
 
     def get_called_floor_smart(self) -> int:
@@ -311,7 +298,7 @@ class Controller:
             if (
                 (source_floor not in elevator.queue)
                 and (source_floor != elevator.floor)
-                # and (self.floors[source_floor].waiting_count > 0)  # TODO: smart toggle
+                and (self.floors[source_floor].waiting_count > 0)
                 and (elevator.actual_capacity < elevator.max_capacity)
             ):
                 elevator.queue.append(source_floor)
@@ -324,7 +311,6 @@ class Controller:
                 json.dumps(elevator.queue, cls=DequeEncoder),
                 qos=0,
             )
-            # time.sleep(0.5)
 
     def elevator_dispatcher(self, id: int):
         logging.debug(f"Start Dispatcher Thread")
@@ -333,16 +319,15 @@ class Controller:
         elevator = self.elevators[id]
         cv = self.dispatcher_locks[id]
         while getattr(t, "do_run", True):
-            while len(elevator.queue) == 0:
-                with cv:
-                    cv.wait()
-
             self.client.publish(
                 f"simulation/elevator/{elevator.id}/queue",
                 json.dumps(elevator.queue, cls=DequeEncoder),
                 qos=0,
             )
-            # logging.debug(f"elevator {elevator.id} queue: {elevator.queue}")
+
+            while len(elevator.queue) == 0:
+                with cv:
+                    cv.wait(timeout=2)
 
             next_floor: int = int(elevator.queue[0])
             # logging.debug(f"elevator {elevator.id} next_floor: {next_floor}")
