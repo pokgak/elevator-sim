@@ -6,6 +6,7 @@ import argparse
 import threading
 import json
 import time
+import random
 
 import paho.mqtt.client as mqtt
 from typing import List, Deque
@@ -254,7 +255,7 @@ class Controller:
         for e in self.elevators:
             combined_queue += e.queue
 
-        for f in self.floors:
+        for f in random.sample(self.floors, k=len(self.floors)):
             if f.id in combined_queue:
                 continue
             if f.up_pressed or f.down_pressed:
