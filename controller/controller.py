@@ -145,9 +145,8 @@ class Controller:
         id = int(msg.topic.split("/")[1])
         elevator = self.elevators[id]
 
-        len_old = len(elevator.queue)
-
         selected = json.loads(msg.payload)
+        # logging.debug(f"elevator {id} selected floors: {selected}")
         for f in selected:
             f = int(f)
             if f not in elevator.destinations:
@@ -190,13 +189,14 @@ class Controller:
         upper = sorted([f for f in q if f > current_floor])
         # reverse lower because when at higher floor we want to go down
         # e.g. current: 9; queue: [8, 7, 6] not [6, 7, 8]
-        lower = sorted([f for f in q if f < current_floor]).reverse()
+        lower = sorted([f for f in q if f < current_floor])
+        lower.reverse()
 
         # if at lowest floor
-        if lower is None:
+        if not lower:
             return deque(upper)
         # or at highest floor
-        if upper is None:
+        if not upper:
             return deque(lower)
         # else we need to combine both upper and lower
         direction = "UP"  # FIXME: always up for now
