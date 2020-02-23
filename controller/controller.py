@@ -19,6 +19,10 @@ DUMB = "dumb"
 
 MULTIPLE_ELEVATOR_THRESHOLD = 10
 
+# direction
+UP = "up"
+DOWN = "down"
+
 
 class Controller:
     def __init__(self, mode: str):
@@ -87,12 +91,21 @@ class Controller:
         elevator = self.elevators[id]
         elevator.floor = int(msg.payload)
         # logging.debug(f"elevator {id} actual floor {elevator.floor}")
+        if elevator.old_floor != elevator.floor:
+            elevator.old_floor = elevator.floor
+
+        if elevator.floor > elevator.old_floor:
+            elevator.direction = UP
+        elif elevator.floor < elevator.old_floor:
+            elevator.direction = DOWN
 
         if elevator.queue and elevator.floor == elevator.queue[0]:
-            # FIXME: determine direction to reset, NOT BOTH
+            # resets call button when an elevator is driving in that direction
             floor = self.floors[elevator.floor]
-            floor.up_pressed = False
-            floor.down_pressed = False
+            if elevator.direction == UP:
+                floor.up_pressed = False
+            elif elevator.direction == DOWN:
+                floor.down_pressed = False
 
             if elevator.floor in elevator.destinations:
                 elevator.destinations.remove(elevator.floor)
@@ -162,7 +175,9 @@ class Controller:
             # ignore calling floor, send passenger in elevator first
             elevator.queue = deque(elevator.destinations)
 
-        elevator.queue = self.sort_queue(elevator.floor, elevator.queue)
+        elevator.queue = self.sort_queue(
+            elevator.direction, elevator.floor, elevator.queue
+        )
         logging.debug(f"sorted queue: {elevator.queue}")
 
         self.client.publish(
@@ -180,7 +195,9 @@ class Controller:
             with cv:
                 cv.notify()
 
-    def sort_queue(self, current_floor: int, q: Deque[int]) -> Deque[int]:
+    def sort_queue(
+        self, direction: str, current_floor: int, q: Deque[int]
+    ) -> Deque[int]:
         # to sort: [8, 1, 6, 7, 2, 3]
         # current floor: 5
         # upper: [6, 7, 8]
