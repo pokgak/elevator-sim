@@ -17,6 +17,10 @@ from cps_common.data import ElevatorData, FloorData
 SMART = "smart"
 DUMB = "dumb"
 
+# direction
+UP = "up"
+DOWN = "down"
+
 
 class Controller:
     def __init__(self, mode: str):
@@ -85,6 +89,13 @@ class Controller:
         elevator = self.elevators[id]
         elevator.floor = int(msg.payload)
         # logging.debug(f"elevator {id} actual floor {elevator.floor}")
+        if elevator.old_floor != elevator.floor:
+            elevator.old_floor = elevator.floor
+
+        if elevator.floor > elevator.old_floor:
+            elevator.direction = UP
+        elif elevator.floor < elevator.old_floor:
+            elevator.direction = DOWN
 
         if elevator.queue and elevator.floor == elevator.queue[0]:
             # FIXME: determine direction to reset, NOT BOTH
