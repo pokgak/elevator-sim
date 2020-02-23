@@ -94,6 +94,9 @@ class Controller:
             floor.up_pressed = False
             floor.down_pressed = False
 
+            if elevator.floor in elevator.destinations:
+                elevator.destinations.remove(elevator.floor)
+
             elevator.queue.popleft()
             cv = self.dispatcher_locks[elevator.id]
             with cv:
@@ -147,6 +150,8 @@ class Controller:
         selected = json.loads(msg.payload)
         for f in selected:
             f = int(f)
+            if f not in elevator.destinations:
+                elevator.destinations.append(f)
             if f not in elevator.queue:
                 # logging.debug(f"elevator {id} new selected floor {f}")
                 elevator.queue.append(f)
@@ -292,18 +297,29 @@ class Controller:
             if (
                 (source_floor not in elevator.queue)
                 and (source_floor != elevator.floor)
-                and (self.floors[source_floor].waiting_count > 0)  # TODO: smart toggle
+                # and (self.floors[source_floor].waiting_count > 0)  # TODO: smart toggle
+                and (elevator.actual_capacity < elevator.max_capacity)
             ):
                 elevator.queue.append(source_floor)
+
+            if elevator.actual_capacity >= elevator.max_capacity:
+                logging.debug(
+                    f"adding elevator {elevator.id} destinations {elevator.destinations} to queue"
+                )
+                # ignore calling floor, send passenger in elevator first
+                elevator.queue = deque(elevator.destinations)
+
+            if elevator.queue:
                 cv = self.dispatcher_locks[elevator.id]
                 with cv:
-                    cv.notify_all()
+                    cv.notify()
 
             self.client.publish(
                 f"simulation/elevator/{elevator.id}/queue",
                 json.dumps(elevator.queue, cls=DequeEncoder),
                 qos=0,
             )
+            time.sleep(0.5)
 
     def elevator_dispatcher(self, id: int):
         logging.debug(f"Start Dispatcher Thread")

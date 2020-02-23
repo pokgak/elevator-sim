@@ -85,7 +85,7 @@ class Elevator:
         logging.info("disconnected from broker")
 
     def on_elevator_next_floor(self, client, userdata, msg):
-        logging.info(f"New message from {msg.topic}")
+        logging.info(f"New message from {msg.topic}: {msg.payload}")
         next_floor = int(msg.payload)
 
         # this lock causes deadlock and times out and disconnect from MQTT broker
