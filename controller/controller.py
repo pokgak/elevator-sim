@@ -6,7 +6,6 @@ import argparse
 import threading
 import json
 import time
-import random
 
 import paho.mqtt.client as mqtt
 from typing import List, Deque
@@ -255,8 +254,8 @@ class Controller:
         for e in self.elevators:
             combined_queue += e.queue
 
-        for f in random.sample(self.floors, k=len(self.floors)):
-            if f.id in combined_queue:
+        for f in self.floors:
+            if f.id in combined_queue or f.waiting_count == 0:
                 continue
             if f.up_pressed or f.down_pressed:
                 return f.id
@@ -274,7 +273,7 @@ class Controller:
                 and f.waiting_count <= MULTIPLE_ELEVATOR_THRESHOLD
             ):
                 continue
-            if f.up_pressed or f.down_pressed:
+            if (f.up_pressed or f.down_pressed) and f.waiting_count > 0:
                 pressed_floors.append({"id": f.id, "count": f.waiting_count})
         max_count = max(pressed_floors, default=None, key=compare_waiting_count)
         if max_count is not None:
@@ -295,11 +294,11 @@ class Controller:
                 continue
 
             elevator = self.select_elevator(source_floor)
+            # logging.debug(f"source_floor: {source_floor}; elevator: {elevator.id}")
             assert isinstance(elevator, ElevatorData)
             if (
                 (source_floor not in elevator.queue)
                 and (source_floor != elevator.floor)
-                and (self.floors[source_floor].waiting_count > 0)
                 and (elevator.actual_capacity < elevator.max_capacity)
             ):
                 elevator.queue.append(source_floor)
@@ -312,6 +311,7 @@ class Controller:
                 json.dumps(elevator.queue, cls=DequeEncoder),
                 qos=0,
             )
+            time.sleep(0.1)
 
     def elevator_dispatcher(self, id: int):
         logging.debug(f"Start Dispatcher Thread")
@@ -329,6 +329,12 @@ class Controller:
             while len(elevator.queue) == 0:
                 with cv:
                     cv.wait(timeout=2)
+
+            self.client.publish(
+                f"simulation/elevator/{elevator.id}/queue",
+                json.dumps(elevator.queue, cls=DequeEncoder),
+                qos=0,
+            )
 
             next_floor: int = int(elevator.queue[0])
             # logging.debug(f"elevator {elevator.id} next_floor: {next_floor}")
