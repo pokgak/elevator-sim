@@ -154,6 +154,14 @@ class Controller:
             if f not in elevator.queue:
                 # logging.debug(f"elevator {id} new selected floor {f}")
                 elevator.queue.append(f)
+
+        if elevator.actual_capacity >= elevator.max_capacity:
+            logging.debug(
+                f"clearing elevator {elevator.id} queue; added {elevator.destinations} to queue"
+            )
+            # ignore calling floor, send passenger in elevator first
+            elevator.queue = deque(elevator.destinations)
+
         elevator.queue = self.sort_queue(elevator.floor, elevator.queue)
         logging.debug(f"sorted queue: {elevator.queue}")
 
@@ -166,8 +174,8 @@ class Controller:
         # notify scheduler thread to update schedule
         self._callButtonEvent.set()
         # notify dispatcher if queue not empty and new dest added to queue
-        if elevator.queue and len_old != len(elevator.queue):
-            logging.debug(f"elevator {elevator.id} queue: {list(elevator.queue)}")
+        if elevator.queue:
+            # logging.debug(f"elevator {elevator.id} queue: {list(elevator.queue)}")
             cv = self.dispatcher_locks[id]
             with cv:
                 cv.notify()
@@ -302,13 +310,6 @@ class Controller:
             ):
                 elevator.queue.append(source_floor)
 
-            if elevator.actual_capacity >= elevator.max_capacity:
-                logging.debug(
-                    f"adding elevator {elevator.id} destinations {elevator.destinations} to queue"
-                )
-                # ignore calling floor, send passenger in elevator first
-                elevator.queue = deque(elevator.destinations)
-
             if elevator.queue:
                 cv = self.dispatcher_locks[elevator.id]
                 with cv:
@@ -319,7 +320,7 @@ class Controller:
                 json.dumps(elevator.queue, cls=DequeEncoder),
                 qos=0,
             )
-            time.sleep(0.5)
+            # time.sleep(0.5)
 
     def elevator_dispatcher(self, id: int):
         logging.debug(f"Start Dispatcher Thread")
@@ -339,7 +340,7 @@ class Controller:
                 with cv:
                     cv.wait()
             next_floor: int = int(elevator.queue[0])
-            logging.debug(f"elevator {elevator.id} next_floor: {next_floor}")
+            # logging.debug(f"elevator {elevator.id} next_floor: {next_floor}")
             self.client.publish(
                 f"elevator/{elevator.id}/next_floor", next_floor, qos=0,
             )
