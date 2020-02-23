@@ -17,7 +17,6 @@ class ElevatorData:
         self.status = "online"
         self.actual_capacity = 0
         self.max_capacity = 0
-        self.destinations = []
 
         # used by controller only
         self.queue: Deque[int] = deque()

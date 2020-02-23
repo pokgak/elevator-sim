@@ -107,9 +107,6 @@ class Controller:
             elif elevator.direction == DOWN:
                 floor.down_pressed = False
 
-            if elevator.floor in elevator.destinations:
-                elevator.destinations.remove(elevator.floor)
-
             elevator.queue.popleft()
             cv = self.dispatcher_locks[elevator.id]
             with cv:
@@ -143,7 +140,7 @@ class Controller:
         # get last section of the topic: "up" or "down"
         direction = msg.topic.split("/")[-1]
         value = bool(msg.payload)
-        # logging.debug(f"floor {id} button direction: {direction}; value: {value}")
+        logging.debug(f"floor {id} button direction: {direction}; value: {value}")
 
         if direction == "up":
             floor.up_pressed = value
@@ -160,20 +157,14 @@ class Controller:
 
         selected = json.loads(msg.payload)
         # logging.debug(f"elevator {id} selected floors: {selected}")
-        for f in selected:
-            f = int(f)
-            if f not in elevator.destinations:
-                elevator.destinations.append(f)
-            if f not in elevator.queue:
-                # logging.debug(f"elevator {id} new selected floor {f}")
-                elevator.queue.append(f)
-
-        if elevator.actual_capacity >= elevator.max_capacity:
+        if elevator.actual_capacity < elevator.max_capacity:
+            elevator.queue += [f for f in selected if f not in elevator.queue]
+        else:
             logging.debug(
-                f"clearing elevator {elevator.id} queue; added {elevator.destinations} to queue"
+                f"clearing elevator {elevator.id} queue; added {selected} to queue"
             )
             # ignore calling floor, send passenger in elevator first
-            elevator.queue = deque(elevator.destinations)
+            elevator.queue = deque(selected)
 
         elevator.queue = self.sort_queue(
             elevator.direction, elevator.floor, elevator.queue
@@ -186,14 +177,12 @@ class Controller:
             qos=0,
         )
 
+        cv = self.dispatcher_locks[id]
+        with cv:
+            cv.notify()
+
         # notify scheduler thread to update schedule
-        self._callButtonEvent.set()
-        # notify dispatcher if queue not empty and new dest added to queue
-        if elevator.queue:
-            # logging.debug(f"elevator {elevator.id} queue: {list(elevator.queue)}")
-            cv = self.dispatcher_locks[id]
-            with cv:
-                cv.notify()
+        # self._callButtonEvent.set()
 
     def sort_queue(
         self, direction: str, current_floor: int, q: Deque[int]
@@ -326,8 +315,6 @@ class Controller:
                 and (elevator.actual_capacity < elevator.max_capacity)
             ):
                 elevator.queue.append(source_floor)
-
-            if elevator.queue:
                 cv = self.dispatcher_locks[elevator.id]
                 with cv:
                     cv.notify()
@@ -346,32 +333,24 @@ class Controller:
         elevator = self.elevators[id]
         cv = self.dispatcher_locks[id]
         while getattr(t, "do_run", True):
+            while len(elevator.queue) == 0:
+                with cv:
+                    cv.wait()
+
             self.client.publish(
                 f"simulation/elevator/{elevator.id}/queue",
                 json.dumps(elevator.queue, cls=DequeEncoder),
                 qos=0,
             )
-            logging.debug(f"elevator {elevator.id} queue: {elevator.queue}")
+            # logging.debug(f"elevator {elevator.id} queue: {elevator.queue}")
 
-            while len(elevator.queue) == 0:
-                with cv:
-                    cv.wait()
             next_floor: int = int(elevator.queue[0])
             # logging.debug(f"elevator {elevator.id} next_floor: {next_floor}")
             self.client.publish(
                 f"elevator/{elevator.id}/next_floor", next_floor, qos=0,
             )
 
-            # reset button pressed
-            if next_floor > elevator.floor:
-                self.floors[elevator.floor].up_pressed = False
-            elif next_floor < elevator.floor:
-                self.floors[elevator.floor].down_pressed = False
-            else:
-                self.floors[elevator.floor].down_pressed = False
-                self.floors[elevator.floor].up_pressed = False
-
-            time.sleep(1)
+            time.sleep(0.5)
 
 
 class DequeEncoder(json.JSONEncoder):
