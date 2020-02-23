@@ -13,8 +13,14 @@ from collections import deque
 from cps_common.data import ElevatorData, FloorData
 
 
+# mode
+SMART = "smart"
+DUMB = "dumb"
+
+
 class Controller:
-    def __init__(self):
+    def __init__(self, mode: str):
+        self.mode = mode
         self.elevators: List[ElevatorData] = [ElevatorData(id) for id in range(0, 6)]
         self.floors: List[FloorData] = [FloorData(id) for id in range(0, 10)]
         self._callButtonEvent = threading.Event()
@@ -229,7 +235,7 @@ class Controller:
         # no elevator with empty queue
         return self.get_nearest_elevator(source_floor)
 
-    def get_called_floor(self) -> int:
+    def get_called_floor_dumb(self) -> int:
         combined_queue = []
         for e in self.elevators:
             combined_queue += e.queue
@@ -247,12 +253,34 @@ class Controller:
 
         return None
 
+    def get_called_floor_smart(self) -> int:
+        combined_queue = []
+        for e in self.elevators:
+            combined_queue += e.queue
+
+        pressed_floors = []
+        for f in self.floors:
+            if (
+                f.id in combined_queue or f.waiting_count == 0
+            ) and f.waiting_count <= 20:
+                continue
+            if f.up_pressed or f.down_pressed:
+                pressed_floors.append({"id": f.id, "count": f.waiting_count})
+        max_count = max(pressed_floors, default=None, key=compare_waiting_count)
+        if max_count is not None:
+            # logging.debug(f"max_count floor: {max_count}")
+            return max_count["id"]
+        return None
+
     def scheduler(self):
         logging.debug(f"Start Scheduling Thread")
         t = threading.currentThread()
         while getattr(t, "do_run", True):
             self._callButtonEvent.wait()
-            source_floor = self.get_called_floor()
+            if self.mode == SMART:
+                source_floor = self.get_called_floor_smart()
+            else:
+                source_floor = self.get_called_floor_dumb()
             if source_floor is None:
                 continue
 
@@ -261,12 +289,13 @@ class Controller:
             if (
                 (source_floor not in elevator.queue)
                 and (source_floor != elevator.floor)
-                and (self.floors[source_floor].waiting_count > 0)
+                and (self.floors[source_floor].waiting_count > 0)  # TODO: smart toggle
             ):
                 elevator.queue.append(source_floor)
                 cv = self.dispatcher_locks[elevator.id]
                 with cv:
                     cv.notify_all()
+
             self.client.publish(
                 f"simulation/elevator/{elevator.id}/queue",
                 json.dumps(elevator.queue, cls=DequeEncoder),
@@ -339,18 +368,26 @@ if __name__ == "__main__":
         default="ERROR",
         help="default: ERROR\nAvailable: INFO DEBUG WARNING ERROR CRITICAL",
     )
+    argp.add_argument(
+        "-mode",
+        action="store",
+        dest="mode",
+        default="smart",
+        help="default: smart\nAvailable: smart | dumb",
+    )
 
     args = argp.parse_args()
 
     host = os.getenv("mqtt_host", args.host)
     port = os.getenv("mqtt_port", args.port)
     loglevel = os.getenv("log_level", args.log)
+    mode = os.getenv("mode", args.log).lower()
 
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
     logging.info("Starting controller")
 
-    controller = Controller()
+    controller = Controller(mode)
     controller.run(host=host, port=int(port))
 
     logging.info("Exited controller")
