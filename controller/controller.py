@@ -17,6 +17,8 @@ from cps_common.data import ElevatorData, FloorData
 SMART = "smart"
 DUMB = "dumb"
 
+MULTIPLE_ELEVATOR_THRESHOLD = 10
+
 
 class Controller:
     def __init__(self, mode: str):
@@ -242,7 +244,7 @@ class Controller:
 
         pressed_floors = []
         for f in self.floors:
-            if (f.id in combined_queue or f.waiting_count == 0) and f.waiting_count <= 20:
+            if f.id in combined_queue:
                 continue
             if f.up_pressed or f.down_pressed:
                 pressed_floors.append({"id": f.id, "count": f.waiting_count})
@@ -261,8 +263,9 @@ class Controller:
         pressed_floors = []
         for f in self.floors:
             if (
-                f.id in combined_queue or f.waiting_count == 0
-            ) and f.waiting_count <= 20:
+                f.id in combined_queue
+                and f.waiting_count <= MULTIPLE_ELEVATOR_THRESHOLD
+            ):
                 continue
             if f.up_pressed or f.down_pressed:
                 pressed_floors.append({"id": f.id, "count": f.waiting_count})
