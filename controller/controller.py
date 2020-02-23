@@ -98,10 +98,12 @@ class Controller:
             elevator.direction = DOWN
 
         if elevator.queue and elevator.floor == elevator.queue[0]:
-            # FIXME: determine direction to reset, NOT BOTH
+            # resets call button when an elevator is driving in that direction
             floor = self.floors[elevator.floor]
-            floor.up_pressed = False
-            floor.down_pressed = False
+            if elevator.direction == UP:
+                floor.up_pressed = False
+            elif elevator.direction == DOWN:
+                floor.down_pressed = False
 
             elevator.queue.popleft()
             cv = self.dispatcher_locks[elevator.id]
@@ -159,8 +161,10 @@ class Controller:
             if f not in elevator.queue:
                 # logging.debug(f"elevator {id} new selected floor {f}")
                 elevator.queue.append(f)
-        elevator.queue = self.sort_queue(elevator.floor, elevator.queue)
-        logging.debug(f"sorted queue: {elevator.queue}")
+        elevator.queue = self.sort_queue(
+            elevator.direction, elevator.floor, elevator.queue
+        )
+        # logging.debug(f"sorted queue: {elevator.queue}")
 
         self.client.publish(
             f"simulation/elevator/{elevator.id}/queue",
@@ -177,7 +181,9 @@ class Controller:
             with cv:
                 cv.notify()
 
-    def sort_queue(self, current_floor: int, q: Deque[int]) -> Deque[int]:
+    def sort_queue(
+        self, direction: str, current_floor: int, q: Deque[int]
+    ) -> Deque[int]:
         # to sort: [8, 1, 6, 7, 2, 3]
         # current floor: 5
         # upper: [6, 7, 8]
@@ -253,7 +259,9 @@ class Controller:
 
         pressed_floors = []
         for f in self.floors:
-            if (f.id in combined_queue or f.waiting_count == 0) and f.waiting_count <= 20:
+            if (
+                f.id in combined_queue or f.waiting_count == 0
+            ) and f.waiting_count <= 20:
                 continue
             if f.up_pressed or f.down_pressed:
                 pressed_floors.append({"id": f.id, "count": f.waiting_count})
