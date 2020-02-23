@@ -44,7 +44,7 @@ services:
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
-      - capacity=10
+      - capacity=20
       - mqtt_host=mqtt
       - elevator_id=0
       - log_level=DEBUG
@@ -57,7 +57,7 @@ services:
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
-      - capacity=10
+      - capacity=20
       - mqtt_host=mqtt
       - elevator_id=1
       - log_level=DEBUG
@@ -70,7 +70,7 @@ services:
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
-      - capacity=10
+      - capacity=20
       - mqtt_host=mqtt
       - elevator_id=2
       - log_level=DEBUG
@@ -83,7 +83,7 @@ services:
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
-      - capacity=10
+      - capacity=20
       - mqtt_host=mqtt
       - elevator_id=3
       - log_level=DEBUG
@@ -96,7 +96,7 @@ services:
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
-      - capacity=10
+      - capacity=20
       - mqtt_host=mqtt
       - elevator_id=4
       - log_level=DEBUG
@@ -109,7 +109,7 @@ services:
     image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
     restart: always
     environment:
-      - capacity=10
+      - capacity=20
       - mqtt_host=mqtt
       - elevator_id=5
       - log_level=DEBUG

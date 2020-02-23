@@ -13,9 +13,9 @@ import paho.mqtt.client as mqtt
 
 class Elevator:
 
-    def __init__(self, id: int, start_floor: int = 0):
+    def __init__(self, id: int, start_floor: int = 0, max_cap: int = 20):
         self.id = id
-        self.maxCap=20 #todo as parameter
+        self.maxCap=max_cap
         self.actualCap=0
         self.destinations = set()
         self.nextFloor=start_floor
@@ -167,6 +167,9 @@ if __name__ == "__main__":
     argp.add_argument(
         "-start", action="store", dest="start", default=0, help="default: 0",
     )
+    argp.add_argument(
+        "-capacity", action="store", dest="capacity", default=20, help="default: 20",
+    )
 
     args = argp.parse_args()
 
@@ -175,12 +178,13 @@ if __name__ == "__main__":
     loglevel = os.getenv("log_level", args.log)
     id = os.getenv("elevator_id", args.elevatorid)
     start_floor = os.getenv("start_floor", args.start)
+    capacity = os.getenv("capacity", args.capacity)
 
     logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
     logging.info(f"Starting elevator {id}")
 
-    controller = Elevator(id=int(id), start_floor=int(start_floor))
+    controller = Elevator(id=int(id), start_floor=int(start_floor), max_cap=capacity)
     controller.run(host=host, port=int(port))
 
     logging.info(f"Exited elevator {id}")

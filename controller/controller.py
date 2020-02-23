@@ -141,8 +141,6 @@ class Controller:
             f = int(f)
             if f not in elevator.queue:
                 # logging.debug(f"elevator {id} new selected floor {f}")
-                # TODO: should double floor be allowed?
-                # TODO: append based on direction of elevator
                 elevator.queue.append(f)
         elevator.queue = self.sort_queue(elevator.floor, elevator.queue)
         logging.debug(f"sorted queue: {elevator.queue}")
