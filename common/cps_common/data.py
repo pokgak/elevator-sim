@@ -11,6 +11,8 @@ class ElevatorData:
     def __init__(self, id: int):
         self.id = id
         self.floor = 0
+        self.old_floor = self.floor
+        self.direction = "up"
         self.door = "open"
         self.status = "online"
         self.actual_capacity = 0
