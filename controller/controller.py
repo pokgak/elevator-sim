@@ -16,8 +16,13 @@ from cps_common.data import ElevatorData, FloorData
 # mode
 SMART = "smart"
 DUMB = "dumb"
+SMARTER_DUMB = "smarter_dumb"
+SMART_WITH_CAP = "smart_with_cap"
 
+# in smart mode, the waiting count threshold to send multiple (>1) elevator to the floor
 MULTIPLE_ELEVATOR_THRESHOLD = 10
+# in smarter dumb mode, configure how many elevator can be sent per floor
+MAX_ELEVATOR_PER_FLOOR = 3
 
 # direction
 UP = "up"
@@ -261,6 +266,41 @@ class Controller:
                 return f.id
         return None
 
+    def get_called_floor_smarter_dumb(self) -> int:
+        combined_queue = []
+        for e in self.elevators:
+            combined_queue += e.queue
+
+        for f in self.floors:
+            if (
+                combined_queue.count(f.id) > MAX_ELEVATOR_PER_FLOOR
+                or f.waiting_count == 0
+            ):
+                continue
+            if f.up_pressed or f.down_pressed:
+                return f.id
+        return None
+
+    def get_called_floor_smart_with_cap(self) -> int:
+        combined_queue = []
+        for e in self.elevators:
+            combined_queue += e.queue
+
+        pressed_floors = []
+        for f in self.floors:
+            if (
+                combined_queue.count(f.id) > MAX_ELEVATOR_PER_FLOOR
+                or f.waiting_count == 0
+            ):
+                continue
+            if (f.up_pressed or f.down_pressed) and f.waiting_count > 0:
+                pressed_floors.append({"id": f.id, "count": f.waiting_count})
+        max_count = max(pressed_floors, default=None, key=compare_waiting_count)
+        if max_count is not None:
+            # logging.debug(f"max_count floor: {max_count}")
+            return max_count["id"]
+        return None
+
     def get_called_floor_smart(self) -> int:
         combined_queue = []
         for e in self.elevators:
@@ -288,8 +328,14 @@ class Controller:
             self._callButtonEvent.wait()
             if self.mode == SMART:
                 source_floor = self.get_called_floor_smart()
-            else:
+            elif self.mode == SMART_WITH_CAP:
+                source_floor = self.get_called_floor_smart_with_cap()
+            elif self.mode == DUMB:
                 source_floor = self.get_called_floor_dumb()
+            elif self.mode == SMARTER_DUMB:
+                source_floor = self.get_called_floor_smarter_dumb()
+            else:
+                logging.error("unknown scheduling mode")
             if source_floor is None:
                 continue
 
