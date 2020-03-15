@@ -12,7 +12,7 @@ services:
     build:
       context: ./
       dockerfile: ./recorder/Dockerfile
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/recorder
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/recorder
     depends_on:
       - mqtt
     environment:
@@ -26,7 +26,7 @@ services:
     build:
       context: ./
       dockerfile: ./controller/Dockerfile
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/controller
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/controller
     restart: always
     depends_on:
       - mqtt
@@ -42,7 +42,7 @@ services:
     build:
       context: ./
       dockerfile: ./elevator/Dockerfile
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=20
@@ -55,7 +55,7 @@ services:
 
   elevator1:
     container_name: elevator1
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=20
@@ -68,7 +68,7 @@ services:
 
   elevator2:
     container_name: elevator2
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=20
@@ -81,7 +81,7 @@ services:
 
   elevator3:
     container_name: elevator3
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=20
@@ -94,7 +94,7 @@ services:
 
   elevator4:
     container_name: elevator4
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=20
@@ -107,7 +107,7 @@ services:
 
   elevator5:
     container_name: elevator5
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/elevator
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/elevator
     restart: always
     environment:
       - capacity=20
@@ -123,7 +123,7 @@ services:
     build:
       context: ./
       dockerfile: ./floor/Dockerfile
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=0
@@ -134,7 +134,7 @@ services:
 
   floor1:
     container_name: floor1
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=1
@@ -145,7 +145,7 @@ services:
 
   floor2:
     container_name: floor2
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=2
@@ -156,7 +156,7 @@ services:
 
   floor3:
     container_name: floor3
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=3
@@ -167,7 +167,7 @@ services:
 
   floor4:
     container_name: floor4
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=4
@@ -178,7 +178,7 @@ services:
 
   floor5:
     container_name: floor5
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=5
@@ -189,7 +189,7 @@ services:
 
   floor6:
     container_name: floor6
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=6
@@ -200,7 +200,7 @@ services:
 
   floor7:
     container_name: floor7
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=7
@@ -211,7 +211,7 @@ services:
 
   floor8:
     container_name: floor8
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=8
@@ -222,7 +222,7 @@ services:
 
   floor9:
     container_name: floor9
-    image: docker-hub.informatik.haw-hamburg.de/wp-cps/simulation/floor
+    image: git.haw-hamburg.de:5005/wp-cps/simulation/floor
     environment:
       - mqtt_host=mqtt
       - floor_id=9
